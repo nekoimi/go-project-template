@@ -1,0 +1,45 @@
+server:
+  port: "8080"
+  mode: debug
+
+database:
+  host: localhost
+  port: "5432"
+  user: postgres
+  password: postgres
+  dbname: go_template
+  sslmode: disable
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime: 30
+
+jwt:
+  secret: "change-me-in-production"
+  expire_hours: 72
+
+scheduler:
+  enabled: false
+  timezone: "Asia/Shanghai"
+
+websocket:
+  enabled: false
+  read_buffer_size: 1024
+  write_buffer_size: 1024
+  ping_period: 60s
+  write_wait: 10s
+  read_wait: 60s
+  max_message_size: 5120
+
+storage:
+  driver: "local"
+  base_url: "http://localhost:8080/uploads"
+  local:
+    upload_dir: "./uploads"
+    max_file_size: 10
+  minio:
+    endpoint: "localhost:9000"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    bucket: "go-template"
+    use_ssl: false
+    public_url: "http://localhost:9000"
