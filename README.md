@@ -104,6 +104,10 @@ make run-scheduler
 
 多实例部署时，请为每个实例设置不同的 `SNOWFLAKE_NODE_ID`，避免雪花 ID 冲突。
 
+设置 `websocket.enabled: true` 后才会注册 `/ws/v1/chat` 并启动 WebSocket 管理循环；同一配置块中的 buffer、读写超时、`max_message_size`、ping 间隔会应用于连接。
+
+当配置了 `server.allowed_origins` 时，**未携带 `Origin` 头的请求**（如 curl / 服务端调用）不会因 CORS 白名单被拦成 403；浏览器跨站请求仍会按白名单校验。
+
 完整配置项见 `configs/config.dev.yaml`。
 
 ## API

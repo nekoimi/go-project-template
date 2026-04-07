@@ -66,10 +66,9 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, db *gorm.DB, fileStorag
 	fileService := service.NewFileService(fileStorage, cfg.Storage.Local.AllowedExts, cfg.Storage.Local.AllowedMIMEs)
 
 	// Handlers
-	authHandler := v1.NewAuthHandler(authService)
-	userHandler := v1.NewUserHandler(userService)
+	authHandler := v1.NewAuthHandler(authService, logger)
+	userHandler := v1.NewUserHandler(userService, logger)
 	uploadHandler := v1.NewUploadHandler(fileService, logger)
-	wsHandler := v1.NewWSHandler(ws.NewWSHandler(wsManager, cfg.JWT.Secret, logger, cfg.Server.AllowedOrigins))
 
 	// API v1 routes
 	api := r.Group("/v1")
@@ -100,8 +99,10 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, db *gorm.DB, fileStorag
 		}
 	}
 
-	// WebSocket
-	r.GET("/ws/v1/chat", wsHandler.Upgrade)
+	if cfg.Websocket.Enabled {
+		wsHandler := v1.NewWSHandler(ws.NewWSHandler(wsManager, cfg.JWT.Secret, logger, cfg.Server.AllowedOrigins, cfg.Websocket))
+		r.GET("/ws/v1/chat", wsHandler.Upgrade)
+	}
 
 	return r
 }

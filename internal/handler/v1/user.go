@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/response"
@@ -13,10 +14,11 @@ import (
 
 type UserHandler struct {
 	userService service.UserService
+	logger      *zap.Logger
 }
 
-func NewUserHandler(userService service.UserService) *UserHandler {
-	return &UserHandler{userService: userService}
+func NewUserHandler(userService service.UserService, logger *zap.Logger) *UserHandler {
+	return &UserHandler{userService: userService, logger: logger}
 }
 
 // GetProfile godoc
@@ -47,7 +49,8 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 			response.AppErr(c, appErr)
 			return
 		}
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, err.Error())
+		h.logger.Error("get profile failed", zap.Error(err))
+		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
 		return
 	}
 

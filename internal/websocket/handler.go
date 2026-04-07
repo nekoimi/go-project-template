@@ -8,22 +8,25 @@ import (
 	wslib "github.com/gorilla/websocket"
 	"go.uber.org/zap"
 
+	"github.com/nekoimi/go-project-template/internal/config"
 	"github.com/nekoimi/go-project-template/internal/pkg/jwtutil"
 )
 
 type WSHandler struct {
-	manager       *Manager
-	jwtSecret     string
-	logger        *zap.Logger
+	manager        *Manager
+	jwtSecret      string
+	logger         *zap.Logger
 	allowedOrigins []string
+	params         connParams
 }
 
-func NewWSHandler(manager *Manager, jwtSecret string, logger *zap.Logger, allowedOrigins []string) *WSHandler {
+func NewWSHandler(manager *Manager, jwtSecret string, logger *zap.Logger, allowedOrigins []string, wsCfg config.WebsocketConfig) *WSHandler {
 	return &WSHandler{
-		manager:       manager,
-		jwtSecret:     jwtSecret,
-		logger:        logger,
+		manager:        manager,
+		jwtSecret:      jwtSecret,
+		logger:         logger,
 		allowedOrigins: allowedOrigins,
+		params:         newConnParams(wsCfg),
 	}
 }
 
@@ -44,8 +47,8 @@ func (h *WSHandler) Upgrade(c *gin.Context) {
 	}
 
 	upgrader := wslib.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  h.params.readBufferSize,
+		WriteBufferSize: h.params.writeBufferSize,
 		CheckOrigin: func(r *http.Request) bool {
 			return h.checkOrigin(r.Header.Get("Origin"))
 		},
@@ -62,7 +65,7 @@ func (h *WSHandler) Upgrade(c *gin.Context) {
 		return
 	}
 
-	client := newClient(h.manager, conn, userID, h.logger)
+	client := newClient(h.manager, conn, userID, h.logger, h.params)
 	h.manager.register <- client
 
 	go client.WritePump()

@@ -32,8 +32,9 @@ func main() {
 		log.Fatalf("failed to initialize app: %v", err)
 	}
 
-	// Start WebSocket manager
-	go a.WSManager.Run()
+	if a.Config.Websocket.Enabled {
+		go a.WSManager.Run()
+	}
 
 	// Start scheduler if enabled
 	if a.Scheduler != nil {
@@ -77,8 +78,9 @@ func main() {
 		a.Scheduler.Stop()
 	}
 
-	// 3. Shutdown WebSocket manager
-	a.WSManager.Shutdown()
+	if a.Config.Websocket.Enabled {
+		a.WSManager.Shutdown()
+	}
 
 	// Cleanup resources
 	cleanup()

@@ -8,35 +8,23 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// Time allowed to write a message to the peer.
-	defaultWriteWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	defaultPongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	defaultPingPeriod = 54 * time.Second
-
-	// Maximum message size allowed from peer.
-	defaultMaxMessageSize = 4096
-)
-
 type Client struct {
 	manager  *Manager
 	conn     *websocket.Conn
 	send     chan []byte
 	userID   string
 	logger   *zap.Logger
+	params   connParams
 }
 
-func newClient(manager *Manager, conn *websocket.Conn, userID string, logger *zap.Logger) *Client {
+func newClient(manager *Manager, conn *websocket.Conn, userID string, logger *zap.Logger, params connParams) *Client {
 	return &Client{
 		manager: manager,
 		conn:    conn,
 		send:    make(chan []byte, 256),
 		userID:  userID,
 		logger:  logger,
+		params:  params,
 	}
 }
 
@@ -47,10 +35,10 @@ func (c *Client) ReadPump() {
 		_ = c.conn.Close()
 	}()
 
-	c.conn.SetReadLimit(defaultMaxMessageSize)
-	_ = c.conn.SetReadDeadline(time.Now().Add(defaultPongWait))
+	c.conn.SetReadLimit(c.params.maxMessageSize)
+	_ = c.conn.SetReadDeadline(time.Now().Add(c.params.readWait))
 	c.conn.SetPongHandler(func(string) error {
-		_ = c.conn.SetReadDeadline(time.Now().Add(defaultPongWait))
+		_ = c.conn.SetReadDeadline(time.Now().Add(c.params.readWait))
 		return nil
 	})
 
@@ -78,7 +66,7 @@ func (c *Client) ReadPump() {
 
 // WritePump writes messages to the WebSocket connection.
 func (c *Client) WritePump() {
-	ticker := time.NewTicker(defaultPingPeriod)
+	ticker := time.NewTicker(c.params.pingPeriod)
 	defer func() {
 		ticker.Stop()
 		_ = c.conn.Close()
@@ -87,7 +75,7 @@ func (c *Client) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(defaultWriteWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(c.params.writeWait))
 			if !ok {
 				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
@@ -98,7 +86,7 @@ func (c *Client) WritePump() {
 				return
 			}
 		case <-ticker.C:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(defaultWriteWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(c.params.writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

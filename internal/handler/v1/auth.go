@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/dto"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
@@ -13,10 +14,11 @@ import (
 
 type AuthHandler struct {
 	authService service.AuthService
+	logger      *zap.Logger
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService service.AuthService, logger *zap.Logger) *AuthHandler {
+	return &AuthHandler{authService: authService, logger: logger}
 }
 
 // Register godoc
@@ -42,7 +44,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			response.AppErr(c, appErr)
 			return
 		}
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, err.Error())
+		h.logger.Error("register failed", zap.Error(err))
+		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
 		return
 	}
 
@@ -72,7 +75,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			response.AppErr(c, appErr)
 			return
 		}
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, err.Error())
+		h.logger.Error("login failed", zap.Error(err))
+		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
 		return
 	}
 

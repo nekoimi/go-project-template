@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -58,8 +59,13 @@ func (s *fileService) validateFile(fileHeader *multipart.FileHeader) error {
 	}
 
 	detectedMIME := http.DetectContentType(buf[:n])
-	if len(s.allowedMIMEs) > 0 && !s.allowedMIMEs[detectedMIME] {
-		return fmt.Errorf("file MIME type %q not allowed", detectedMIME)
+	mediaType, _, err := mime.ParseMediaType(detectedMIME)
+	if err != nil {
+		mediaType = detectedMIME
+	}
+	mediaType = strings.ToLower(strings.TrimSpace(mediaType))
+	if len(s.allowedMIMEs) > 0 && !s.allowedMIMEs[mediaType] {
+		return fmt.Errorf("file MIME type %q not allowed", mediaType)
 	}
 
 	return nil

@@ -48,17 +48,36 @@ func New(cfg config.StorageConfig) (storage.FileStorage, error) {
 	}, nil
 }
 
+func sanitizeMinIOFolder(folder string) (string, error) {
+	raw := strings.ReplaceAll(folder, "\\", "/")
+	for _, p := range strings.Split(raw, "/") {
+		if p == ".." {
+			return "", fmt.Errorf("invalid folder path")
+		}
+	}
+	out := filepath.ToSlash(filepath.Clean(raw))
+	return strings.Trim(out, "/"), nil
+}
+
 func (s *minioStorage) Upload(ctx context.Context, file *storage.FileHeader, folder string) (*storage.UploadResult, error) {
+	folder, err := sanitizeMinIOFolder(folder)
+	if err != nil {
+		return nil, err
+	}
+
 	ext := filepath.Ext(file.Filename)
 	filename := snowflake.GenerateStringID() + ext
-	objectName := fmt.Sprintf("%s/%s", strings.Trim(folder, "/"), filename)
+	objectName := filename
+	if folder != "" {
+		objectName = folder + "/" + filename
+	}
 
 	contentType := mime.TypeByExtension(ext)
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
 
-	_, err := s.client.PutObject(ctx, s.bucket, objectName, file.File, file.Size, minioClient.PutObjectOptions{
+	_, err = s.client.PutObject(ctx, s.bucket, objectName, file.File, file.Size, minioClient.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {

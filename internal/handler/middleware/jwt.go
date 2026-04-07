@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,7 +21,7 @@ func JWTAuth(secret string) gin.HandlerFunc {
 		}
 
 		parts := splitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
 			response.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
 			c.Abort()
 			return
