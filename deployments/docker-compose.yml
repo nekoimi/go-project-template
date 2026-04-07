@@ -39,6 +39,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: go_template
+      TZ: Asia/Shanghai
 
   scheduler:
     build:
@@ -48,12 +49,14 @@ services:
         TARGET: cmd/scheduler
     depends_on:
       - postgres
+      - minio
     environment:
       DATABASE_HOST: postgres
       DATABASE_PORT: "5432"
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: go_template
+      TZ: Asia/Shanghai
 
 volumes:
   pgdata:
