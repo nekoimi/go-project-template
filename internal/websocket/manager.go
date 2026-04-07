@@ -192,7 +192,7 @@ func (m *Manager) Shutdown() {
 
 	for userID, client := range m.clients {
 		// Send close frame
-		client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "server shutting down"))
+		_ = client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "server shutting down"))
 		close(client.send)
 		delete(m.clients, userID)
 	}

@@ -40,6 +40,9 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: go_template
       TZ: Asia/Shanghai
+      JWT_SECRET: dev-change-me-in-production
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
 
   scheduler:
     build:
@@ -57,6 +60,9 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: go_template
       TZ: Asia/Shanghai
+      JWT_SECRET: dev-change-me-in-production
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
 
 volumes:
   pgdata:

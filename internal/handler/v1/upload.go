@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/response"
@@ -12,10 +13,11 @@ import (
 
 type UploadHandler struct {
 	fileService service.FileService
+	logger      *zap.Logger
 }
 
-func NewUploadHandler(fileService service.FileService) *UploadHandler {
-	return &UploadHandler{fileService: fileService}
+func NewUploadHandler(fileService service.FileService, logger *zap.Logger) *UploadHandler {
+	return &UploadHandler{fileService: fileService, logger: logger}
 }
 
 // UploadSingle godoc
@@ -40,7 +42,8 @@ func (h *UploadHandler) UploadSingle(c *gin.Context) {
 
 	result, err := h.fileService.UploadSingle(c.Request.Context(), file, folder)
 	if err != nil {
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, err.Error())
+		h.logger.Error("upload single failed", zap.Error(err))
+		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "upload failed")
 		return
 	}
 
@@ -75,7 +78,8 @@ func (h *UploadHandler) UploadMultiple(c *gin.Context) {
 
 	results, err := h.fileService.UploadMultiple(c.Request.Context(), files, folder)
 	if err != nil {
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, err.Error())
+		h.logger.Error("upload multiple failed", zap.Error(err))
+		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "upload failed")
 		return
 	}
 

@@ -1,4 +1,4 @@
-.PHONY: run run-server run-scheduler build test swagger migrate-up migrate-down docker-build docker-up docker-down clean
+.PHONY: run run-server run-scheduler build test lint swagger migrate-up migrate-down docker-build docker-up docker-down clean
 
 # Run the server
 run: run-server
@@ -17,6 +17,10 @@ build:
 # Test
 test:
 	go test ./...
+
+# Lint (requires golangci-lint in PATH: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)
+lint:
+	golangci-lint run ./...
 
 # Swagger
 swagger:

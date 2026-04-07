@@ -25,6 +25,12 @@ func Load(configPath string) (*Config, error) {
 	_ = v.BindEnv("server.timezone", "TZ")
 	_ = v.BindEnv("snowflake.node_id", "SNOWFLAKE_NODE_ID")
 
+	_ = v.BindEnv("storage.minio.access_key", "MINIO_ACCESS_KEY")
+	_ = v.BindEnv("storage.minio.secret_key", "MINIO_SECRET_KEY")
+	_ = v.BindEnv("storage.minio.endpoint", "MINIO_ENDPOINT")
+	_ = v.BindEnv("storage.minio.public_url", "MINIO_PUBLIC_URL")
+	_ = v.BindEnv("storage.minio.bucket", "MINIO_BUCKET")
+
 	if err := v.ReadInConfig(); err != nil {
 		return nil, err
 	}

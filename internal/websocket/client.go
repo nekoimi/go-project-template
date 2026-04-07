@@ -44,13 +44,13 @@ func newClient(manager *Manager, conn *websocket.Conn, userID string, logger *za
 func (c *Client) ReadPump() {
 	defer func() {
 		c.manager.unregister <- c
-		c.conn.Close()
+		_ = c.conn.Close()
 	}()
 
 	c.conn.SetReadLimit(defaultMaxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(defaultPongWait))
+	_ = c.conn.SetReadDeadline(time.Now().Add(defaultPongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(defaultPongWait))
+		_ = c.conn.SetReadDeadline(time.Now().Add(defaultPongWait))
 		return nil
 	})
 
@@ -81,15 +81,15 @@ func (c *Client) WritePump() {
 	ticker := time.NewTicker(defaultPingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		_ = c.conn.Close()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(defaultWriteWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(defaultWriteWait))
 			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -98,7 +98,7 @@ func (c *Client) WritePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(defaultWriteWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(defaultWriteWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -120,18 +120,5 @@ func (c *Client) handleMessage(msg *Message) {
 		}
 	default:
 		c.logger.Debug("unknown message type", zap.String("type", msg.Type))
-	}
-}
-
-func (c *Client) sendJSON(v interface{}) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		c.logger.Error("failed to marshal message", zap.Error(err))
-		return
-	}
-	select {
-	case c.send <- data:
-	default:
-		c.logger.Warn("send channel full, dropping message", zap.String("userID", c.userID))
 	}
 }

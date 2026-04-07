@@ -68,7 +68,7 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, db *gorm.DB, fileStorag
 	// Handlers
 	authHandler := v1.NewAuthHandler(authService)
 	userHandler := v1.NewUserHandler(userService)
-	uploadHandler := v1.NewUploadHandler(fileService)
+	uploadHandler := v1.NewUploadHandler(fileService, logger)
 	wsHandler := v1.NewWSHandler(ws.NewWSHandler(wsManager, cfg.JWT.Secret, logger, cfg.Server.AllowedOrigins))
 
 	// API v1 routes

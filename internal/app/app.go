@@ -53,31 +53,31 @@ func Initialize(configPath string) (*App, func(), error) {
 		return nil, nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	// 3. Database
+	// 5. Database
 	db, err := database.NewPostgresDB(cfg.Database, log, cfg.Server.Mode)
 	if err != nil {
-		log.Fatal("failed to connect database", zap.Error(err))
+		return nil, nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	// 4. Storage
+	// 6. Storage
 	var fileStorage storage.FileStorage
 	switch cfg.Storage.Driver {
 	case "minio":
 		fileStorage, err = minio.New(cfg.Storage)
 		if err != nil {
-			log.Fatal("failed to create minio storage", zap.Error(err))
+			return nil, nil, fmt.Errorf("failed to create minio storage: %w", err)
 		}
 	default:
 		fileStorage = local.New(cfg.Storage)
 	}
 
-	// 5. WebSocket manager
+	// 7. WebSocket manager
 	wsManager := ws.NewManager(log)
 
-	// 6. Setup router
+	// 8. Setup router
 	router := handler.SetupRouter(cfg, log, db, fileStorage, wsManager)
 
-	// 7. Scheduler (optional)
+	// 9. Scheduler (optional)
 	var sched *scheduler.Scheduler
 	if cfg.Scheduler.Enabled {
 		sched = scheduler.New(cfg.Scheduler, log, db)
@@ -97,9 +97,11 @@ func Initialize(configPath string) (*App, func(), error) {
 	cleanup := func() {
 		log.Info("cleaning up resources")
 		if sqlDB, err := db.DB(); err == nil {
-			sqlDB.Close()
+			if cerr := sqlDB.Close(); cerr != nil {
+				log.Warn("failed to close database", zap.Error(cerr))
+			}
 		}
-		log.Sync()
+		_ = log.Sync()
 	}
 
 	return app, cleanup, nil

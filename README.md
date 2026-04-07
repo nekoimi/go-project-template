@@ -66,6 +66,8 @@ make dev-up    # 启动 PostgreSQL + MinIO
 make migrate-up
 ```
 
+请**按文件名顺序执行全部迁移**（`migrations/` 下脚本可能包含破坏性变更，例如用户表结构重建）；不要只执行部分迁移以免与当前模型不一致。
+
 ### 3. 启动服务
 
 ```bash
@@ -92,6 +94,15 @@ make run-scheduler
 | `JWT_SECRET` | jwt.secret |
 | `TZ` | server.timezone |
 | `SNOWFLAKE_NODE_ID` | snowflake.node_id |
+| `MINIO_ACCESS_KEY` | storage.minio.access_key |
+| `MINIO_SECRET_KEY` | storage.minio.secret_key |
+| `MINIO_ENDPOINT` | storage.minio.endpoint |
+| `MINIO_PUBLIC_URL` | storage.minio.public_url |
+| `MINIO_BUCKET` | storage.minio.bucket |
+
+生产使用的 `configs/config.prod.yaml` 中等占位符（如 `${MINIO_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。
+
+多实例部署时，请为每个实例设置不同的 `SNOWFLAKE_NODE_ID`，避免雪花 ID 冲突。
 
 完整配置项见 `configs/config.dev.yaml`。
 
@@ -108,7 +119,7 @@ make run-scheduler
 | GET | `/v1/users/profile` | JWT | 获取当前用户信息 |
 | POST | `/v1/upload/single` | JWT | 上传单个文件 |
 | POST | `/v1/upload/multiple` | JWT | 上传多个文件 |
-| GET | `/ws/v1/chat?token=` | JWT | WebSocket 连接 |
+| GET | `/ws/v1/chat` | JWT | WebSocket；推荐：`Sec-WebSocket-Protocol: access_token, <jwt>`（与 `new WebSocket(url, ['access_token', token])` 一致）；兼容查询参数 `?token=` |
 
 ### 统一响应格式
 
@@ -129,6 +140,7 @@ make run-scheduler
 make build         # 编译到 bin/
 make swagger       # 重新生成 Swagger 文档
 make test          # 运行测试
+make lint          # golangci-lint（需已安装：go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest）
 
 make docker-build  # 构建 Docker 镜像
 make docker-up     # 启动完整部署 (app + scheduler + PG + MinIO)

@@ -55,7 +55,6 @@ func (s *localStorage) Upload(_ context.Context, file *storage.FileHeader, folde
 	ext := filepath.Ext(file.Filename)
 	filename := snowflake.GenerateStringID() + ext
 
-	destDir := filepath.Join(s.uploadDir, folder)
 	destDir, err := s.safeJoin(s.uploadDir, folder)
 	if err != nil {
 		return nil, err
@@ -70,11 +69,11 @@ func (s *localStorage) Upload(_ context.Context, file *storage.FileHeader, folde
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 
 	written, err := io.Copy(dst, file.File)
 	if err != nil {
-		os.Remove(destPath)
+		_ = os.Remove(destPath)
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
 

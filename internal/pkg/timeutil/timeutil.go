@@ -33,10 +33,10 @@ func Now() LocalTime {
 
 // MarshalJSON 实现 JSON 序列化
 func (lt LocalTime) MarshalJSON() ([]byte, error) {
-	if lt.Time.IsZero() {
+	if lt.IsZero() {
 		return []byte(`""`), nil
 	}
-	return []byte(fmt.Sprintf(`"%s"`, lt.Time.In(globalLocation).Format(layout))), nil
+	return []byte(fmt.Sprintf(`"%s"`, lt.In(globalLocation).Format(layout))), nil
 }
 
 // UnmarshalJSON 实现 JSON 反序列化
@@ -71,10 +71,10 @@ func (lt *LocalTime) Scan(value interface{}) error {
 
 // Value 实现 driver.Valuer 接口
 func (lt LocalTime) Value() (driver.Value, error) {
-	if lt.Time.IsZero() {
+	if lt.IsZero() {
 		return nil, nil
 	}
-	return lt.Time.In(time.UTC), nil
+	return lt.In(time.UTC), nil
 }
 
 // GormDataType 返回 GORM 数据类型
