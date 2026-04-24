@@ -19,7 +19,7 @@ type AuthResponse struct {
 }
 
 type UserInfo struct {
-	ID        int64             `json:"id,string"`
+	ID        string            `json:"id"`
 	Username  string            `json:"username"`
 	Email     string            `json:"email"`
 	CreatedAt timeutil.LocalTime `json:"created_at"`

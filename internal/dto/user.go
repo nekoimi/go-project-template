@@ -3,7 +3,7 @@ package dto
 import "github.com/nekoimi/go-project-template/internal/pkg/timeutil"
 
 type UserResponse struct {
-	ID        int64             `json:"id,string"`
+	ID        string            `json:"id"`
 	Username  string            `json:"username"`
 	Email     string            `json:"email"`
 	CreatedAt timeutil.LocalTime `json:"created_at"`

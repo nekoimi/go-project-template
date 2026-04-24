@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,6 +12,7 @@ import (
 	"github.com/nekoimi/go-project-template/internal/dto"
 	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
+	"github.com/nekoimi/go-project-template/internal/pkg/idutil"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
@@ -79,7 +79,7 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	return &dto.AuthResponse{
 		Token: token,
 		User: dto.UserInfo{
-			ID:        user.ID,
+			ID:        idutil.FormatSnowflakeID(user.ID),
 			Username:  user.Username,
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
@@ -108,7 +108,7 @@ func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 	return &dto.AuthResponse{
 		Token: token,
 		User: dto.UserInfo{
-			ID:        user.ID,
+			ID:        idutil.FormatSnowflakeID(user.ID),
 			Username:  user.Username,
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
@@ -118,7 +118,7 @@ func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 
 func (s *authService) generateToken(userID int64) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": fmt.Sprintf("%d", userID),
+		"sub": idutil.FormatSnowflakeID(userID),
 		"exp": time.Now().Add(s.jwtExpire).Unix(),
 		"iat": time.Now().Unix(),
 	}

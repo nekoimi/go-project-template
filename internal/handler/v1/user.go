@@ -2,7 +2,6 @@ package v1
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -37,13 +36,13 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	uid, err := strconv.ParseInt(userID.(string), 10, 64)
-	if err != nil {
+	uidStr, ok := userID.(string)
+	if !ok || uidStr == "" {
 		response.AppErr(c, errcode.New(errcode.Unauthorized))
 		return
 	}
 
-	profile, err := h.userService.GetProfile(c.Request.Context(), uid)
+	profile, err := h.userService.GetProfile(c.Request.Context(), uidStr)
 	if err != nil {
 		if appErr, ok := response.IsAppError(err); ok {
 			response.AppErr(c, appErr)

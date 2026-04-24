@@ -339,7 +339,7 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string",
-                    "example": "0"
+                    "example": "1234567890123456789"
                 },
                 "username": {
                     "type": "string"
@@ -357,7 +357,7 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string",
-                    "example": "0"
+                    "example": "1234567890123456789"
                 },
                 "updated_at": {
                     "$ref": "#/definitions/timeutil.LocalTime"

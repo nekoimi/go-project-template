@@ -40,6 +40,7 @@
 │   │   ├── errcode/            # 业务错误码
 │   │   ├── response/           # 统一响应格式
 │   │   ├── snowflake/          # ID 生成器
+│   │   ├── idutil/             # 雪花 ID 字符串编解码 (API 边界)
 │   │   └── timeutil/           # 时区与时间类型
 │   ├── repository/             # 数据访问层
 │   ├── scheduler/              # 定时任务
@@ -103,6 +104,8 @@ make run-scheduler
 生产使用的 `configs/config.prod.yaml` 中等占位符（如 `${MINIO_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。
 
 多实例部署时，请为每个实例设置不同的 `SNOWFLAKE_NODE_ID`，避免雪花 ID 冲突。
+
+数据库主键仍为 `bigint`，但 **JSON API 中的用户 ID 一律为十进制字符串**（DTO 字段类型为 `string`），避免 JavaScript `Number` 对大整数精度丢失；前端请按字符串传递与展示，不要 `parseInt` / `Number()` 后再回传。
 
 设置 `websocket.enabled: true` 后才会注册 `/ws/v1/chat` 并启动 WebSocket 管理循环；同一配置块中的 buffer、读写超时、`max_message_size`、ping 间隔会应用于连接。
 
