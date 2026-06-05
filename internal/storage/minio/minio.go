@@ -11,7 +11,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"github.com/nekoimi/go-project-template/internal/config"
-	"github.com/nekoimi/go-project-template/internal/pkg/snowflake"
+	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/storage"
 )
 
@@ -66,7 +66,7 @@ func (s *minioStorage) Upload(ctx context.Context, file *storage.FileHeader, fol
 	}
 
 	ext := filepath.Ext(file.Filename)
-	filename := snowflake.GenerateStringID() + ext
+	filename := idgen.GenerateStringID() + ext
 	objectName := filename
 	if folder != "" {
 		objectName = folder + "/" + filename

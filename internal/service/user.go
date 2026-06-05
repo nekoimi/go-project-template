@@ -6,14 +6,14 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/nekoimi/go-project-template/internal/dto"
+	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/idutil"
+	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
 type UserService interface {
-	GetProfile(ctx context.Context, userID string) (*dto.UserResponse, error)
+	GetProfile(ctx context.Context, userID string) (*model.UserResponse, error)
 }
 
 type userService struct {
@@ -24,8 +24,8 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 	return &userService{userRepo: userRepo}
 }
 
-func (s *userService) GetProfile(ctx context.Context, userID string) (*dto.UserResponse, error) {
-	uid, err := idutil.ParseSnowflakeID(userID)
+func (s *userService) GetProfile(ctx context.Context, userID string) (*model.UserResponse, error) {
+	uid, err := idgen.ParseID(userID)
 	if err != nil {
 		return nil, errcode.New(errcode.Unauthorized)
 	}
@@ -38,8 +38,8 @@ func (s *userService) GetProfile(ctx context.Context, userID string) (*dto.UserR
 		return nil, err
 	}
 
-	return &dto.UserResponse{
-		ID:        idutil.FormatSnowflakeID(user.ID),
+	return &model.UserResponse{
+		ID:        idgen.FormatID(user.ID),
 		Username:  user.Username,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,

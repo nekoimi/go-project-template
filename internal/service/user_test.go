@@ -8,7 +8,7 @@ import (
 
 	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/idutil"
+	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
@@ -49,7 +49,7 @@ func TestUserService_GetProfile_IDAsString(t *testing.T) {
 	}
 	svc := NewUserService(repo)
 
-	got, err := svc.GetProfile(context.Background(), idutil.FormatSnowflakeID(id))
+	got, err := svc.GetProfile(context.Background(), idgen.FormatID(id))
 	if err != nil {
 		t.Fatal(err)
 	}

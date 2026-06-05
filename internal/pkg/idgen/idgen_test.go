@@ -1,10 +1,10 @@
-package idutil
+package idgen
 
 import (
 	"testing"
 )
 
-func TestParseSnowflakeID(t *testing.T) {
+func TestParseID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -24,20 +24,20 @@ func TestParseSnowflakeID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ParseSnowflakeID(tt.input)
+			got, err := ParseID(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("ParseSnowflakeID(%q) err = %v, wantErr %v", tt.input, err, tt.wantErr)
+				t.Fatalf("ParseID(%q) err = %v, wantErr %v", tt.input, err, tt.wantErr)
 			}
 			if !tt.wantErr && got != tt.want {
-				t.Fatalf("ParseSnowflakeID(%q) = %d, want %d", tt.input, got, tt.want)
+				t.Fatalf("ParseID(%q) = %d, want %d", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestFormatSnowflakeID(t *testing.T) {
+func TestFormatID(t *testing.T) {
 	t.Parallel()
-	if got := FormatSnowflakeID(9223372036854775807); got != "9223372036854775807" {
-		t.Fatalf("FormatSnowflakeID = %q, want max int64 string", got)
+	if got := FormatID(9223372036854775807); got != "9223372036854775807" {
+		t.Fatalf("FormatID = %q, want max int64 string", got)
 	}
 }

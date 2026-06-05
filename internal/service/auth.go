@@ -9,16 +9,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	"github.com/nekoimi/go-project-template/internal/dto"
 	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/idutil"
+	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
 type AuthService interface {
-	Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponse, error)
-	Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponse, error)
+	Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error)
+	Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error)
 }
 
 type authService struct {
@@ -37,7 +36,7 @@ func NewAuthService(userRepo repository.UserRepository, db *gorm.DB, jwtSecret s
 	}
 }
 
-func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponse, error) {
+func (s *authService) Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -76,10 +75,10 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		return nil, err
 	}
 
-	return &dto.AuthResponse{
+	return &model.AuthResponse{
 		Token: token,
-		User: dto.UserInfo{
-			ID:        idutil.FormatSnowflakeID(user.ID),
+		User: model.UserInfo{
+			ID:        idgen.FormatID(user.ID),
 			Username:  user.Username,
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
@@ -87,7 +86,7 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	}, nil
 }
 
-func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponse, error) {
+func (s *authService) Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error) {
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -105,10 +104,10 @@ func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 		return nil, err
 	}
 
-	return &dto.AuthResponse{
+	return &model.AuthResponse{
 		Token: token,
-		User: dto.UserInfo{
-			ID:        idutil.FormatSnowflakeID(user.ID),
+		User: model.UserInfo{
+			ID:        idgen.FormatID(user.ID),
 			Username:  user.Username,
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
@@ -118,7 +117,7 @@ func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 
 func (s *authService) generateToken(userID int64) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": idutil.FormatSnowflakeID(userID),
+		"sub": idgen.FormatID(userID),
 		"exp": time.Now().Add(s.jwtExpire).Unix(),
 		"iat": time.Now().Unix(),
 	}

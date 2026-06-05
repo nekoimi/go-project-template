@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"time"
-
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -11,14 +9,18 @@ import (
 
 	"github.com/nekoimi/go-project-template/internal/config"
 	v1 "github.com/nekoimi/go-project-template/internal/handler/v1"
-	"github.com/nekoimi/go-project-template/internal/handler/middleware"
-	"github.com/nekoimi/go-project-template/internal/repository"
-	"github.com/nekoimi/go-project-template/internal/service"
-	"github.com/nekoimi/go-project-template/internal/storage"
-	ws "github.com/nekoimi/go-project-template/internal/websocket"
+	"github.com/nekoimi/go-project-template/internal/middleware"
 )
 
-func SetupRouter(cfg *config.Config, logger *zap.Logger, db *gorm.DB, fileStorage storage.FileStorage, wsManager *ws.Manager) *gin.Engine {
+func SetupRouter(
+	cfg *config.Config,
+	logger *zap.Logger,
+	db *gorm.DB,
+	authHandler *v1.AuthHandler,
+	userHandler *v1.UserHandler,
+	uploadHandler *v1.UploadHandler,
+	wsHandler *v1.WSHandler,
+) *gin.Engine {
 	gin.SetMode(cfg.Server.Mode)
 	r := gin.New()
 
@@ -56,20 +58,6 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, db *gorm.DB, fileStorag
 		r.Static("/uploads", cfg.Storage.Local.UploadDir)
 	}
 
-	// Repositories
-	userRepo := repository.NewUserRepository(db)
-
-	// Services
-	jwtExpire := time.Duration(cfg.JWT.ExpireHours) * time.Hour
-	authService := service.NewAuthService(userRepo, db, cfg.JWT.Secret, jwtExpire)
-	userService := service.NewUserService(userRepo)
-	fileService := service.NewFileService(fileStorage, cfg.Storage.Local.AllowedExts, cfg.Storage.Local.AllowedMIMEs)
-
-	// Handlers
-	authHandler := v1.NewAuthHandler(authService, logger)
-	userHandler := v1.NewUserHandler(userService, logger)
-	uploadHandler := v1.NewUploadHandler(fileService, logger)
-
 	// API v1 routes
 	api := r.Group("/v1")
 	{
@@ -99,8 +87,7 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, db *gorm.DB, fileStorag
 		}
 	}
 
-	if cfg.Websocket.Enabled {
-		wsHandler := v1.NewWSHandler(ws.NewWSHandler(wsManager, cfg.JWT.Secret, logger, cfg.Server.AllowedOrigins, cfg.Websocket))
+	if cfg.Websocket.Enabled && wsHandler != nil {
 		r.GET("/ws/v1/chat", wsHandler.Upgrade)
 	}
 

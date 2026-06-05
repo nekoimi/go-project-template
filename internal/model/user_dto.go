@@ -1,4 +1,4 @@
-package dto
+package model
 
 import "github.com/nekoimi/go-project-template/internal/pkg/timeutil"
 

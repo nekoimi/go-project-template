@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/nekoimi/go-project-template/internal/pkg/snowflake"
+	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/pkg/timeutil"
 	"gorm.io/gorm"
 )
@@ -21,7 +21,7 @@ func (User) TableName() string {
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if u.ID == 0 {
-		u.ID = snowflake.GenerateID().Int64()
+		u.ID = idgen.GenerateID()
 	}
 	return nil
 }

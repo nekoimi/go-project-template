@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/nekoimi/go-project-template/internal/config"
-	"github.com/nekoimi/go-project-template/internal/pkg/snowflake"
+	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/storage"
 )
 
@@ -53,7 +53,7 @@ func (s *localStorage) Upload(_ context.Context, file *storage.FileHeader, folde
 	}
 
 	ext := filepath.Ext(file.Filename)
-	filename := snowflake.GenerateStringID() + ext
+	filename := idgen.GenerateStringID() + ext
 
 	destDir, err := s.safeJoin(s.uploadDir, folder)
 	if err != nil {

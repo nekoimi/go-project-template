@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/nekoimi/go-project-template/internal/dto"
+	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/response"
 	"github.com/nekoimi/go-project-template/internal/service"
@@ -26,13 +26,13 @@ func NewAuthHandler(authService service.AuthService, logger *zap.Logger) *AuthHa
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body  body      dto.RegisterRequest  true  "Register request"
-// @Success      200   {object}  response.APIResponse{data=dto.AuthResponse}
+// @Param        body  body      model.RegisterRequest  true  "Register request"
+// @Success      200   {object}  response.APIResponse{data=model.AuthResponse}
 // @Failure      400   {object}  response.APIResponse
 // @Failure      409   {object}  response.APIResponse
 // @Router       /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
-	var req dto.RegisterRequest
+	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err.Error())
 		return
@@ -57,13 +57,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body  body      dto.LoginRequest  true  "Login request"
-// @Success      200   {object}  response.APIResponse{data=dto.AuthResponse}
+// @Param        body  body      model.LoginRequest  true  "Login request"
+// @Success      200   {object}  response.APIResponse{data=model.AuthResponse}
 // @Failure      400   {object}  response.APIResponse
 // @Failure      401   {object}  response.APIResponse
 // @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req dto.LoginRequest
+	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err.Error())
 		return
