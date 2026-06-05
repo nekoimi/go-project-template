@@ -9,8 +9,8 @@ import (
 
 	"github.com/nekoimi/go-project-template/internal/config"
 	"github.com/nekoimi/go-project-template/internal/handler"
-	"github.com/nekoimi/go-project-template/internal/infrastructure/database"
-	"github.com/nekoimi/go-project-template/internal/infrastructure/logger"
+	"github.com/nekoimi/go-project-template/internal/pkg/database"
+	"github.com/nekoimi/go-project-template/internal/pkg/logger"
 	"github.com/nekoimi/go-project-template/internal/pkg/snowflake"
 	"github.com/nekoimi/go-project-template/internal/pkg/timeutil"
 	"github.com/nekoimi/go-project-template/internal/scheduler"
