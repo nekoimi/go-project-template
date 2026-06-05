@@ -24,9 +24,9 @@ func NewAuthHandler(authService service.AuthService, logger *zap.Logger) *AuthHa
 // @Accept       json
 // @Produce      json
 // @Param        body  body      model.RegisterRequest  true  "Register request"
-// @Success      200   {object}  response.APIResponse{data=model.AuthResponse}
-// @Failure      400   {object}  response.APIResponse
-// @Failure      409   {object}  response.APIResponse
+// @Success      200   {object}  resp.JsonResponse{data=model.AuthResponse}
+// @Failure      400   {object}  resp.JsonResponse
+// @Failure      409   {object}  resp.JsonResponse
 // @Router       /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) (any, error) {
 	var req model.RegisterRequest
@@ -43,9 +43,9 @@ func (h *AuthHandler) Register(c *gin.Context) (any, error) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body      model.LoginRequest  true  "Login request"
-// @Success      200   {object}  response.APIResponse{data=model.AuthResponse}
-// @Failure      400   {object}  response.APIResponse
-// @Failure      401   {object}  response.APIResponse
+// @Success      200   {object}  resp.JsonResponse{data=model.AuthResponse}
+// @Failure      400   {object}  resp.JsonResponse
+// @Failure      401   {object}  resp.JsonResponse
 // @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) (any, error) {
 	var req model.LoginRequest

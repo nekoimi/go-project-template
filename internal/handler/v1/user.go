@@ -22,9 +22,9 @@ func NewUserHandler(userService service.UserService, logger *zap.Logger) *UserHa
 // @Tags         users
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  response.APIResponse{data=model.UserResponse}
-// @Failure      401  {object}  response.APIResponse
-// @Failure      404  {object}  response.APIResponse
+// @Success      200  {object}  resp.JsonResponse{data=model.UserResponse}
+// @Failure      401  {object}  resp.JsonResponse
+// @Failure      404  {object}  resp.JsonResponse
 // @Router       /users/profile [get]
 func (h *UserHandler) GetProfile(c *gin.Context) (any, error) {
 	userID, exists := c.Get("userID")

@@ -25,8 +25,8 @@ func NewUploadHandler(fileService service.FileService, logger *zap.Logger) *Uplo
 // @Security     BearerAuth
 // @Param        file   formData  file    true  "File to upload"
 // @Param        folder formData  string  false "Upload folder"
-// @Success      200    {object}  response.APIResponse
-// @Failure      400    {object}  response.APIResponse
+// @Success      200    {object}  resp.JsonResponse
+// @Failure      400    {object}  resp.JsonResponse
 // @Router       /upload/single [post]
 func (h *UploadHandler) UploadSingle(c *gin.Context) (any, error) {
 	file, err := c.FormFile("file")
@@ -47,8 +47,8 @@ func (h *UploadHandler) UploadSingle(c *gin.Context) (any, error) {
 // @Security     BearerAuth
 // @Param        files  formData  []file  true  "Files to upload"
 // @Param        folder formData  string  false "Upload folder"
-// @Success      200    {object}  response.APIResponse
-// @Failure      400    {object}  response.APIResponse
+// @Success      200    {object}  resp.JsonResponse
+// @Failure      400    {object}  resp.JsonResponse
 // @Router       /upload/multiple [post]
 func (h *UploadHandler) UploadMultiple(c *gin.Context) (any, error) {
 	form, err := c.MultipartForm()

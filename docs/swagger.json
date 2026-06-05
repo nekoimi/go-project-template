@@ -28,7 +28,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.LoginRequest"
+                            "$ref": "#/definitions/model.LoginRequest"
                         }
                     }
                 ],
@@ -38,13 +38,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.APIResponse"
+                                    "$ref": "#/definitions/resp.JsonResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AuthResponse"
+                                            "$ref": "#/definitions/model.AuthResponse"
                                         }
                                     }
                                 }
@@ -54,13 +54,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     }
                 }
@@ -85,7 +85,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RegisterRequest"
+                            "$ref": "#/definitions/model.RegisterRequest"
                         }
                     }
                 ],
@@ -95,13 +95,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.APIResponse"
+                                    "$ref": "#/definitions/resp.JsonResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AuthResponse"
+                                            "$ref": "#/definitions/model.AuthResponse"
                                         }
                                     }
                                 }
@@ -111,13 +111,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     }
                 }
@@ -163,13 +163,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     }
                 }
@@ -211,13 +211,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     }
                 }
@@ -243,13 +243,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.APIResponse"
+                                    "$ref": "#/definitions/resp.JsonResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
+                                            "$ref": "#/definitions/model.UserResponse"
                                         }
                                     }
                                 }
@@ -259,13 +259,13 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/resp.JsonResponse"
                         }
                     }
                 }
@@ -273,18 +273,18 @@
         }
     },
     "definitions": {
-        "dto.AuthResponse": {
+        "model.AuthResponse": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/dto.UserInfo"
+                    "$ref": "#/definitions/model.UserInfo"
                 }
             }
         },
-        "dto.LoginRequest": {
+        "model.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -299,7 +299,7 @@
                 }
             }
         },
-        "dto.RegisterRequest": {
+        "model.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -322,7 +322,7 @@
                 }
             }
         },
-        "dto.UserInfo": {
+        "model.UserInfo": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -340,7 +340,7 @@
                 }
             }
         },
-        "dto.UserResponse": {
+        "model.UserResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -361,7 +361,7 @@
                 }
             }
         },
-        "response.APIResponse": {
+        "resp.JsonResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -369,7 +369,7 @@
                 },
                 "data": {},
                 "error": {},
-                "message": {
+                "msg": {
                     "type": "string"
                 }
             }
