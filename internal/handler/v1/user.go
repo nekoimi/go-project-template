@@ -1,13 +1,10 @@
 package v1
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/response"
 	"github.com/nekoimi/go-project-template/internal/service"
 )
 
@@ -25,33 +22,20 @@ func NewUserHandler(userService service.UserService, logger *zap.Logger) *UserHa
 // @Tags         users
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  response.APIResponse{data=dto.UserResponse}
+// @Success      200  {object}  response.APIResponse{data=model.UserResponse}
 // @Failure      401  {object}  response.APIResponse
 // @Failure      404  {object}  response.APIResponse
 // @Router       /users/profile [get]
-func (h *UserHandler) GetProfile(c *gin.Context) {
+func (h *UserHandler) GetProfile(c *gin.Context) (any, error) {
 	userID, exists := c.Get("userID")
 	if !exists {
-		response.AppErr(c, errcode.New(errcode.Unauthorized))
-		return
+		return nil, errcode.New(errcode.Unauthorized)
 	}
 
 	uidStr, ok := userID.(string)
 	if !ok || uidStr == "" {
-		response.AppErr(c, errcode.New(errcode.Unauthorized))
-		return
+		return nil, errcode.New(errcode.Unauthorized)
 	}
 
-	profile, err := h.userService.GetProfile(c.Request.Context(), uidStr)
-	if err != nil {
-		if appErr, ok := response.IsAppError(err); ok {
-			response.AppErr(c, appErr)
-			return
-		}
-		h.logger.Error("get profile failed", zap.Error(err))
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
-		return
-	}
-
-	response.Success(c, profile)
+	return h.userService.GetProfile(c.Request.Context(), uidStr)
 }

@@ -1,13 +1,10 @@
 package v1
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/response"
 	"github.com/nekoimi/go-project-template/internal/service"
 )
 
@@ -31,23 +28,15 @@ func NewUploadHandler(fileService service.FileService, logger *zap.Logger) *Uplo
 // @Success      200    {object}  response.APIResponse
 // @Failure      400    {object}  response.APIResponse
 // @Router       /upload/single [post]
-func (h *UploadHandler) UploadSingle(c *gin.Context) {
+func (h *UploadHandler) UploadSingle(c *gin.Context) (any, error) {
 	file, err := c.FormFile("file")
 	if err != nil {
-		response.ErrorWithMsg(c, http.StatusBadRequest, errcode.BadRequest, "missing file")
-		return
+		return nil, errcode.NewWithDetail(errcode.BadRequest, "missing file")
 	}
 
 	folder := c.DefaultPostForm("folder", "uploads")
 
-	result, err := h.fileService.UploadSingle(c.Request.Context(), file, folder)
-	if err != nil {
-		h.logger.Error("upload single failed", zap.Error(err))
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "upload failed")
-		return
-	}
-
-	response.Success(c, result)
+	return h.fileService.UploadSingle(c.Request.Context(), file, folder)
 }
 
 // UploadMultiple godoc
@@ -61,27 +50,18 @@ func (h *UploadHandler) UploadSingle(c *gin.Context) {
 // @Success      200    {object}  response.APIResponse
 // @Failure      400    {object}  response.APIResponse
 // @Router       /upload/multiple [post]
-func (h *UploadHandler) UploadMultiple(c *gin.Context) {
+func (h *UploadHandler) UploadMultiple(c *gin.Context) (any, error) {
 	form, err := c.MultipartForm()
 	if err != nil {
-		response.ErrorWithMsg(c, http.StatusBadRequest, errcode.BadRequest, "invalid multipart form")
-		return
+		return nil, errcode.NewWithDetail(errcode.BadRequest, "invalid multipart form")
 	}
 
 	files := form.File["files"]
 	if len(files) == 0 {
-		response.ErrorWithMsg(c, http.StatusBadRequest, errcode.BadRequest, "no files provided")
-		return
+		return nil, errcode.NewWithDetail(errcode.BadRequest, "no files provided")
 	}
 
 	folder := c.DefaultPostForm("folder", "uploads")
 
-	results, err := h.fileService.UploadMultiple(c.Request.Context(), files, folder)
-	if err != nil {
-		h.logger.Error("upload multiple failed", zap.Error(err))
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "upload failed")
-		return
-	}
-
-	response.Success(c, results)
+	return h.fileService.UploadMultiple(c.Request.Context(), files, folder)
 }

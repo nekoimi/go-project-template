@@ -1,4 +1,4 @@
-package response
+package resp
 
 import (
 	"errors"
@@ -6,17 +6,35 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
+	"go.uber.org/zap"
 )
 
-type APIResponse struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   interface{} `json:"error,omitempty"`
+// HandlerFunc 定义简化的 handler 函数类型
+type HandlerFunc func(c *gin.Context) (any, error)
+
+// Handle 包装简化的 handler，统一处理成功/错误响应
+func Handle(fn HandlerFunc, logger *zap.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data, err := fn(c)
+		if err != nil {
+			if appErr, ok := IsAppError(err); ok {
+				AppErr(c, appErr)
+				return
+			}
+			logger.Error("handler error",
+				zap.String("method", c.Request.Method),
+				zap.String("path", c.Request.URL.Path),
+				zap.Error(err),
+			)
+			ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
+			return
+		}
+		Ok(c, data)
+	}
 }
 
-func Success(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusOK, APIResponse{
+func Ok(c *gin.Context, data any) {
+	c.JSON(http.StatusOK, JsonResponse{
 		Code:    errcode.OK.Value,
 		Message: errcode.OK.Message,
 		Data:    data,
@@ -24,14 +42,14 @@ func Success(c *gin.Context, data interface{}) {
 }
 
 func Error(c *gin.Context, httpStatus int, code *errcode.Code) {
-	c.JSON(httpStatus, APIResponse{
+	c.JSON(httpStatus, JsonResponse{
 		Code:    code.Value,
 		Message: code.Message,
 	})
 }
 
 func ErrorWithMsg(c *gin.Context, httpStatus int, code *errcode.Code, msg string) {
-	c.JSON(httpStatus, APIResponse{
+	c.JSON(httpStatus, JsonResponse{
 		Code:    code.Value,
 		Message: msg,
 	})
@@ -40,7 +58,7 @@ func ErrorWithMsg(c *gin.Context, httpStatus int, code *errcode.Code, msg string
 // AppErr 根据 AppError 返回响应，自动映射 HTTP 状态码
 func AppErr(c *gin.Context, appErr *errcode.AppError) {
 	httpStatus := httpStatusFromCode(appErr.Code.Value)
-	resp := APIResponse{
+	resp := JsonResponse{
 		Code:    appErr.Code.Value,
 		Message: appErr.Code.Message,
 	}
@@ -53,8 +71,8 @@ func AppErr(c *gin.Context, appErr *errcode.AppError) {
 }
 
 // ValidationError 返回验证错误
-func ValidationError(c *gin.Context, details interface{}) {
-	c.JSON(http.StatusUnprocessableEntity, APIResponse{
+func ValidationError(c *gin.Context, details any) {
+	c.JSON(http.StatusUnprocessableEntity, JsonResponse{
 		Code:    errcode.Validation.Value,
 		Message: errcode.Validation.Message,
 		Error:   details,

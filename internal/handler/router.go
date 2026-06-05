@@ -10,6 +10,7 @@ import (
 	"github.com/nekoimi/go-project-template/internal/config"
 	v1 "github.com/nekoimi/go-project-template/internal/handler/v1"
 	"github.com/nekoimi/go-project-template/internal/middleware"
+	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
 
 func SetupRouter(
@@ -64,8 +65,8 @@ func SetupRouter(
 		// Auth (public)
 		auth := api.Group("/auth")
 		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", resp.Handle(authHandler.Register, logger))
+			auth.POST("/login", resp.Handle(authHandler.Login, logger))
 		}
 
 		// Protected routes
@@ -75,14 +76,14 @@ func SetupRouter(
 			// Users
 			users := protected.Group("/users")
 			{
-				users.GET("/profile", userHandler.GetProfile)
+				users.GET("/profile", resp.Handle(userHandler.GetProfile, logger))
 			}
 
 			// Upload
 			upload := protected.Group("/upload")
 			{
-				upload.POST("/single", uploadHandler.UploadSingle)
-				upload.POST("/multiple", uploadHandler.UploadMultiple)
+				upload.POST("/single", resp.Handle(uploadHandler.UploadSingle, logger))
+				upload.POST("/multiple", resp.Handle(uploadHandler.UploadMultiple, logger))
 			}
 		}
 	}

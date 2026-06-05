@@ -1,14 +1,11 @@
 package v1
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/response"
 	"github.com/nekoimi/go-project-template/internal/service"
 )
 
@@ -31,25 +28,13 @@ func NewAuthHandler(authService service.AuthService, logger *zap.Logger) *AuthHa
 // @Failure      400   {object}  response.APIResponse
 // @Failure      409   {object}  response.APIResponse
 // @Router       /auth/register [post]
-func (h *AuthHandler) Register(c *gin.Context) {
+func (h *AuthHandler) Register(c *gin.Context) (any, error) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ValidationError(c, err.Error())
-		return
+		return nil, errcode.NewWithDetail(errcode.Validation, err.Error())
 	}
 
-	result, err := h.authService.Register(c.Request.Context(), req)
-	if err != nil {
-		if appErr, ok := response.IsAppError(err); ok {
-			response.AppErr(c, appErr)
-			return
-		}
-		h.logger.Error("register failed", zap.Error(err))
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
-		return
-	}
-
-	response.Success(c, result)
+	return h.authService.Register(c.Request.Context(), req)
 }
 
 // Login godoc
@@ -62,23 +47,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @Failure      400   {object}  response.APIResponse
 // @Failure      401   {object}  response.APIResponse
 // @Router       /auth/login [post]
-func (h *AuthHandler) Login(c *gin.Context) {
+func (h *AuthHandler) Login(c *gin.Context) (any, error) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ValidationError(c, err.Error())
-		return
+		return nil, errcode.NewWithDetail(errcode.Validation, err.Error())
 	}
 
-	result, err := h.authService.Login(c.Request.Context(), req)
-	if err != nil {
-		if appErr, ok := response.IsAppError(err); ok {
-			response.AppErr(c, appErr)
-			return
-		}
-		h.logger.Error("login failed", zap.Error(err))
-		response.ErrorWithMsg(c, http.StatusInternalServerError, errcode.Internal, "internal error")
-		return
-	}
-
-	response.Success(c, result)
+	return h.authService.Login(c.Request.Context(), req)
 }

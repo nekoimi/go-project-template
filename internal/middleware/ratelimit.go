@@ -9,7 +9,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/response"
+	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
 
 // RateLimit 全局令牌桶限流中间件
@@ -18,7 +18,7 @@ func RateLimit(rps float64, burst int) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		if !limiter.Allow() {
-			response.Error(c, http.StatusTooManyRequests, errcode.TooManyReq)
+			resp.Error(c, http.StatusTooManyRequests, errcode.TooManyReq)
 			c.Abort()
 			return
 		}
@@ -69,7 +69,7 @@ func IPRateLimit(rps float64, burst int) gin.HandlerFunc {
 		mu.Unlock()
 
 		if !entry.limiter.Allow() {
-			response.Error(c, http.StatusTooManyRequests, errcode.TooManyReq)
+			resp.Error(c, http.StatusTooManyRequests, errcode.TooManyReq)
 			c.Abort()
 			return
 		}

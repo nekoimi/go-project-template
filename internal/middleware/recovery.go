@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/pkg/response"
+	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
 
 func Recovery(logger *zap.Logger) gin.HandlerFunc {
@@ -19,7 +19,7 @@ func Recovery(logger *zap.Logger) gin.HandlerFunc {
 					zap.String("method", c.Request.Method),
 					zap.String("path", c.Request.URL.Path),
 				)
-				response.Error(c, http.StatusInternalServerError, errcode.Internal)
+				resp.Error(c, http.StatusInternalServerError, errcode.Internal)
 				c.Abort()
 			}
 		}()

@@ -8,28 +8,28 @@ import (
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/jwtutil"
-	"github.com/nekoimi/go-project-template/internal/pkg/response"
+	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
 
 func JWTAuth(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			response.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
+			resp.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
 			c.Abort()
 			return
 		}
 
 		parts := splitN(authHeader, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			response.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
+			resp.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
 			c.Abort()
 			return
 		}
 
 		userID, err := jwtutil.ValidateToken(parts[1], secret)
 		if err != nil {
-			response.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
+			resp.Error(c, http.StatusUnauthorized, errcode.Unauthorized)
 			c.Abort()
 			return
 		}
