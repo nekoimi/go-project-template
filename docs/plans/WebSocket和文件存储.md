@@ -29,11 +29,8 @@ goscaffold/
 │   │   └── logger/
 │   └── pkg/
 │       └── response/                # HTTP 响应（WebSocket 可复用部分逻辑）
-├── configs/
+├── config/
 │   └── config.dev.yaml              # 新增 websocket 配置段
-├── deployments/
-│   ├── docker-compose.yml           # 可选暴露 ws 端口
-│   └── Dockerfile
 ├── .env.example
 ├── go.mod
 ├── Makefile
@@ -48,7 +45,7 @@ goscaffold/
 go get github.com/gorilla/websocket
 ```
 
-### 配置新增部分（configs/config.dev.yaml）
+### 配置新增部分（config/config.dev.yaml）
 
 ```yaml
 server:
@@ -139,12 +136,9 @@ goscaffold/
 │   └── infrastructure/
 │       ├── database/
 │       └── logger/
-├── configs/
+├── config/
 │   └── config.dev.yaml              # 新增 storage 配置
 ├── migrations/                      # 可选：新增 files 表记录文件元数据
-├── deployments/
-│   ├── docker-compose.yml           # MinIO 服务（开发用）
-│   └── Dockerfile
 ├── .env.example
 ├── go.mod
 ├── Makefile
@@ -160,7 +154,7 @@ go get github.com/minio/minio-go/v7/pkg/credentials
 
 （`gorilla/websocket` 和其他已有依赖保持不变）
 
-### 3. 配置新增部分（configs/config.dev.yaml）
+### 3. 配置新增部分（config/config.dev.yaml）
 
 ```yaml
 server:

@@ -4,10 +4,10 @@
 run: run-server
 
 run-server:
-	go run cmd/server/main.go --config configs/config.dev.yaml
+	go run cmd/server/main.go --config config/config.dev.yaml
 
 run-scheduler:
-	go run cmd/scheduler/main.go --config configs/config.dev.yaml
+	go run cmd/scheduler/main.go --config config/config.dev.yaml
 
 # Build
 build:

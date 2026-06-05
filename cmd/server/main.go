@@ -24,7 +24,7 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "configs/config.dev.yaml", "path to config file")
+	configPath := flag.String("config", "config/config.dev.yaml", "path to config file")
 	flag.Parse()
 
 	a, cleanup, err := app.Initialize(*configPath)

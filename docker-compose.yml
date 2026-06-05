@@ -22,6 +22,48 @@ services:
     volumes:
       - miniodata:/data
 
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        TARGET: cmd/server
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - minio
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: go_template
+      TZ: Asia/Shanghai
+      JWT_SECRET: dev-change-me-in-production
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+
+  scheduler:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        TARGET: cmd/scheduler
+    depends_on:
+      - postgres
+      - minio
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: go_template
+      TZ: Asia/Shanghai
+      JWT_SECRET: dev-change-me-in-production
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+
 volumes:
   pgdata:
   miniodata:

@@ -24,8 +24,7 @@
 ├── cmd/
 │   ├── server/main.go          # HTTP 服务入口
 │   └── scheduler/main.go       # 独立定时任务入口
-├── configs/                    # 配置文件
-├── deployments/                # Dockerfile & docker-compose
+├── config/                    # 配置文件
 ├── docs/                       # Swagger 文档
 ├── internal/
 │   ├── app/                    # 应用初始化
@@ -83,7 +82,7 @@ make run-scheduler
 
 ## 配置
 
-配置文件位于 `configs/`，通过 `--config` 参数指定。支持环境变量覆盖：
+配置文件位于 `config/`，通过 `--config` 参数指定。支持环境变量覆盖：
 
 | 环境变量 | 对应配置 |
 |---|---|
@@ -101,7 +100,7 @@ make run-scheduler
 | `MINIO_PUBLIC_URL` | storage.minio.public_url |
 | `MINIO_BUCKET` | storage.minio.bucket |
 
-生产使用的 `configs/config.prod.yaml` 中等占位符（如 `${MINIO_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。
+生产使用的 `config/config.prod.yaml` 中等占位符（如 `${MINIO_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。
 
 多实例部署时，请为每个实例设置不同的 `SNOWFLAKE_NODE_ID`，避免雪花 ID 冲突。
 
@@ -111,7 +110,7 @@ make run-scheduler
 
 当配置了 `server.allowed_origins` 时，**未携带 `Origin` 头的请求**（如 curl / 服务端调用）不会因 CORS 白名单被拦成 403；浏览器跨站请求仍会按白名单校验。
 
-完整配置项见 `configs/config.dev.yaml`。
+完整配置项见 `config/config.dev.yaml`。
 
 ## API
 

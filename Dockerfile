@@ -17,9 +17,9 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=builder /app/bin/app /app/app
-COPY --from=builder /app/configs /app/configs
+COPY --from=builder /app/config /app/config
 
 EXPOSE 8080
 
 ENTRYPOINT ["/app/app"]
-CMD ["--config", "configs/config.prod.yaml"]
+CMD ["--config", "config/config.prod.yaml"]
