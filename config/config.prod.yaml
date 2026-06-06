@@ -1,4 +1,5 @@
 server:
+  enabled: true
   port: "8080"
   mode: release
   # CORS/WebSocket 允许的来源，空则允许全部（开发模式）

@@ -45,6 +45,7 @@ type RateLimitConfig struct {
 }
 
 type ServerConfig struct {
+	Enabled         bool     `mapstructure:"enabled"`
 	Port            string   `mapstructure:"port"`
 	Mode            string   `mapstructure:"mode"` // debug / release
 	Timezone        string   `mapstructure:"timezone"`

@@ -46,6 +46,7 @@ func Load(configPath string) (*Config, error) {
 func DefaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
+			Enabled:         true,
 			Port:            "8080",
 			Mode:            "debug",
 			Timezone:        "Asia/Shanghai",
@@ -67,7 +68,7 @@ func DefaultConfig() *Config {
 			ExpireHours: 72,
 		},
 		Scheduler: SchedulerConfig{
-			Enabled:  false,
+			Enabled:  true,
 			Timezone: "Asia/Shanghai",
 		},
 		Snowflake: SnowflakeConfig{

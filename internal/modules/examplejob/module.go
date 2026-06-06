@@ -4,8 +4,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/framework"
+	"github.com/nekoimi/go-project-template/internal/module"
 	"github.com/nekoimi/go-project-template/internal/scheduler/jobs"
 )
+
+func init() {
+	module.Register(NewModule(), module.ScopeHTTP, module.ScopeScheduler)
+}
 
 type Module struct{}
 

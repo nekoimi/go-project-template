@@ -2,8 +2,13 @@ package upload
 
 import (
 	"github.com/nekoimi/go-project-template/internal/framework"
+	"github.com/nekoimi/go-project-template/internal/module"
 	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
+
+func init() {
+	module.Register(NewModule(), module.ScopeHTTP)
+}
 
 type Module struct{}
 

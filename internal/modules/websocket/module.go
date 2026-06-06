@@ -4,8 +4,13 @@ import (
 	"context"
 
 	"github.com/nekoimi/go-project-template/internal/framework"
+	"github.com/nekoimi/go-project-template/internal/module"
 	ws "github.com/nekoimi/go-project-template/internal/websocket"
 )
+
+func init() {
+	module.Register(NewModule(), module.ScopeHTTP)
+}
 
 type Module struct{}
 

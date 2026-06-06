@@ -2,25 +2,19 @@ package app
 
 import (
 	"github.com/nekoimi/go-project-template/internal/framework"
-	"github.com/nekoimi/go-project-template/internal/modules/auth"
-	"github.com/nekoimi/go-project-template/internal/modules/examplejob"
-	"github.com/nekoimi/go-project-template/internal/modules/upload"
-	"github.com/nekoimi/go-project-template/internal/modules/user"
-	modulews "github.com/nekoimi/go-project-template/internal/modules/websocket"
+	"github.com/nekoimi/go-project-template/internal/module"
+
+	_ "github.com/nekoimi/go-project-template/internal/modules/auth"
+	_ "github.com/nekoimi/go-project-template/internal/modules/examplejob"
+	_ "github.com/nekoimi/go-project-template/internal/modules/upload"
+	_ "github.com/nekoimi/go-project-template/internal/modules/user"
+	_ "github.com/nekoimi/go-project-template/internal/modules/websocket"
 )
 
-func builtinModules() []framework.Module {
-	return []framework.Module{
-		auth.NewModule(),
-		user.NewModule(),
-		upload.NewModule(),
-		modulews.NewModule(),
-		examplejob.NewModule(),
-	}
+func registeredModules() []framework.Module {
+	return module.Modules(module.ScopeHTTP, module.ScopeScheduler)
 }
 
-func builtinSchedulerModules() []framework.Module {
-	return []framework.Module{
-		examplejob.NewModule(),
-	}
+func registeredSchedulerModules() []framework.Module {
+	return module.Modules(module.ScopeScheduler)
 }

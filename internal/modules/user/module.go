@@ -2,9 +2,14 @@ package user
 
 import (
 	"github.com/nekoimi/go-project-template/internal/framework"
+	"github.com/nekoimi/go-project-template/internal/module"
 	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
+
+func init() {
+	module.Register(NewModule(), module.ScopeHTTP)
+}
 
 type Module struct{}
 

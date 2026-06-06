@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -23,15 +24,17 @@ import (
 )
 
 type App struct {
-	Engine    *gin.Engine
-	Config    *config.Config
-	Logger    *zap.Logger
-	DB        *gorm.DB
-	Storage   storage.FileStorage
-	WSManager *ws.Manager
-	Scheduler *scheduler.Scheduler
-	Modules   []framework.Module
-	ModuleCtx *framework.ModuleContext
+	Engine     *gin.Engine
+	Config     *config.Config
+	Logger     *zap.Logger
+	DB         *gorm.DB
+	Storage    storage.FileStorage
+	WSManager  *ws.Manager
+	Scheduler  *scheduler.Scheduler
+	HTTPServer *http.Server
+	httpErr    chan error
+	Modules    []framework.Module
+	ModuleCtx  *framework.ModuleContext
 }
 
 func (a *App) Boot(ctx context.Context) error {
@@ -49,6 +52,10 @@ func (a *App) Shutdown(ctx context.Context) error {
 }
 
 func Initialize(configPath string) (*App, func(), error) {
+	return initialize(configPath, registeredModules())
+}
+
+func initialize(configPath string, modules []framework.Module) (*App, func(), error) {
 	// 1. Load config
 	cfg, err := config.Load(configPath)
 	if err != nil {
@@ -103,7 +110,7 @@ func Initialize(configPath string) (*App, func(), error) {
 	})
 	events := framework.NewEventBus()
 
-	// 9. Scheduler (optional)
+	// 9. Scheduler
 	var sched *scheduler.Scheduler
 	if cfg.Scheduler.Enabled {
 		sched = scheduler.New(cfg.Scheduler, log, db)
@@ -114,7 +121,6 @@ func Initialize(configPath string) (*App, func(), error) {
 
 	// 11. Register feature modules
 	moduleCtx := framework.NewModuleContext(cfg, log, db, router, sched, fileStorage, wsManager, health, events)
-	modules := builtinModules()
 	if err := framework.RegisterModules(moduleCtx, modules...); err != nil {
 		return nil, nil, err
 	}

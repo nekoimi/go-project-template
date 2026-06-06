@@ -1,4 +1,5 @@
 server:
+  enabled: true
   port: "8080"
   mode: debug
   timezone: "Asia/Shanghai"
@@ -28,7 +29,7 @@ rate_limit:
   burst: 200
 
 scheduler:
-  enabled: false
+  enabled: true
   timezone: "Asia/Shanghai"
 
 modules:
