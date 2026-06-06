@@ -1,4 +1,4 @@
-package service
+package user
 
 import (
 	"context"
@@ -47,7 +47,7 @@ func TestUserService_GetProfile_IDAsString(t *testing.T) {
 			Email:    "e@e.com",
 		},
 	}
-	svc := NewUserService(repo)
+	svc := NewService(repo)
 
 	got, err := svc.GetProfile(context.Background(), idgen.FormatID(id))
 	if err != nil {
@@ -61,7 +61,7 @@ func TestUserService_GetProfile_IDAsString(t *testing.T) {
 func TestUserService_GetProfile_InvalidIDUnauthorized(t *testing.T) {
 	t.Parallel()
 
-	svc := NewUserService(&stubUserRepo{user: &model.User{}})
+	svc := NewService(&stubUserRepo{user: &model.User{}})
 	_, err := svc.GetProfile(context.Background(), "not-a-number")
 	app, ok := err.(*errcode.AppError)
 	if !ok || app.Code != errcode.Unauthorized {

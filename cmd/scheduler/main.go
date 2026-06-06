@@ -16,17 +16,19 @@ func main() {
 	flag.Parse()
 
 	// 复用 app 包的初始化逻辑
-	app, cleanup, err := app.Initialize(*configPath)
+	a, cleanup, err := app.Initialize(*configPath)
 	if err != nil {
 		log.Fatalf("failed to initialize: %v", err)
 	}
 	defer cleanup()
 
 	// 使用 app 中已经初始化好的 Scheduler
-	sched := app.Scheduler
+	sched := a.Scheduler
 	if sched == nil {
-		sched = scheduler.New(app.Config.Scheduler, app.Logger, app.DB)
-		sched.RegisterJobs()
+		sched = scheduler.New(a.Config.Scheduler, a.Logger, a.DB)
+		if err := app.RegisterSchedulerModules(a.Config, a.Logger, a.DB, sched); err != nil {
+			log.Fatalf("failed to register scheduler modules: %v", err)
+		}
 	}
 
 	sched.Start()
@@ -35,6 +37,6 @@ func main() {
 	defer stop()
 
 	<-ctx.Done()
-	app.Logger.Info("shutting down scheduler")
+	a.Logger.Info("shutting down scheduler")
 	sched.Stop()
 }

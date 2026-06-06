@@ -11,6 +11,27 @@ type Config struct {
 	Scheduler SchedulerConfig `mapstructure:"scheduler"`
 	Websocket WebsocketConfig `mapstructure:"websocket"`
 	Storage   StorageConfig   `mapstructure:"storage"`
+	Modules   ModulesConfig   `mapstructure:"modules"`
+}
+
+type ModulesConfig map[string]ModuleConfig
+
+type ModuleConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func (c *Config) ModuleEnabled(name string) bool {
+	if c == nil {
+		return false
+	}
+	if c.Modules == nil {
+		return true
+	}
+	module, ok := c.Modules[name]
+	if !ok {
+		return true
+	}
+	return module.Enabled
 }
 
 type SnowflakeConfig struct {
@@ -64,10 +85,10 @@ type WebsocketConfig struct {
 }
 
 type StorageConfig struct {
-	Driver  string          `mapstructure:"driver"` // local / minio
-	BaseURL string          `mapstructure:"base_url"`
-	Local   LocalConfig     `mapstructure:"local"`
-	Minio   MinioConfig     `mapstructure:"minio"`
+	Driver  string      `mapstructure:"driver"` // local / minio
+	BaseURL string      `mapstructure:"base_url"`
+	Local   LocalConfig `mapstructure:"local"`
+	Minio   MinioConfig `mapstructure:"minio"`
 }
 
 type LocalConfig struct {

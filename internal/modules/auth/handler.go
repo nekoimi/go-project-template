@@ -1,4 +1,4 @@
-package v1
+package auth
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,16 +6,15 @@ import (
 
 	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/service"
 )
 
-type AuthHandler struct {
-	authService service.AuthService
+type Handler struct {
+	authService Service
 	logger      *zap.Logger
 }
 
-func NewAuthHandler(authService service.AuthService, logger *zap.Logger) *AuthHandler {
-	return &AuthHandler{authService: authService, logger: logger}
+func NewHandler(authService Service, logger *zap.Logger) *Handler {
+	return &Handler{authService: authService, logger: logger}
 }
 
 // Register godoc
@@ -28,7 +27,7 @@ func NewAuthHandler(authService service.AuthService, logger *zap.Logger) *AuthHa
 // @Failure      400   {object}  resp.JsonResponse
 // @Failure      409   {object}  resp.JsonResponse
 // @Router       /auth/register [post]
-func (h *AuthHandler) Register(c *gin.Context) (any, error) {
+func (h *Handler) Register(c *gin.Context) (any, error) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return nil, errcode.NewWithDetail(errcode.Validation, err.Error())
@@ -47,7 +46,7 @@ func (h *AuthHandler) Register(c *gin.Context) (any, error) {
 // @Failure      400   {object}  resp.JsonResponse
 // @Failure      401   {object}  resp.JsonResponse
 // @Router       /auth/login [post]
-func (h *AuthHandler) Login(c *gin.Context) (any, error) {
+func (h *Handler) Login(c *gin.Context) (any, error) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return nil, errcode.NewWithDetail(errcode.Validation, err.Error())

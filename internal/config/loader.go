@@ -82,9 +82,9 @@ func DefaultConfig() *Config {
 			Enabled:         false,
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-			PingPeriod:      60 * 1e9,  // 60s
-			WriteWait:       10 * 1e9,  // 10s
-			ReadWait:        60 * 1e9,  // 60s
+			PingPeriod:      60 * 1e9, // 60s
+			WriteWait:       10 * 1e9, // 10s
+			ReadWait:        60 * 1e9, // 60s
 			MaxMessageSize:  5120,
 		},
 		Storage: StorageConfig{
@@ -101,6 +101,23 @@ func DefaultConfig() *Config {
 				Bucket:    "go-template",
 				UseSSL:    false,
 				PublicURL: "http://localhost:9000",
+			},
+		},
+		Modules: ModulesConfig{
+			"auth": {
+				Enabled: true,
+			},
+			"user": {
+				Enabled: true,
+			},
+			"upload": {
+				Enabled: true,
+			},
+			"websocket": {
+				Enabled: true,
+			},
+			"example_job": {
+				Enabled: true,
 			},
 		},
 	}

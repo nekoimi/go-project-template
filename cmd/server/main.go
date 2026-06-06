@@ -32,8 +32,8 @@ func main() {
 		log.Fatalf("failed to initialize app: %v", err)
 	}
 
-	if a.Config.Websocket.Enabled {
-		go a.WSManager.Run()
+	if err := a.Boot(context.Background()); err != nil {
+		log.Fatalf("failed to boot app: %v", err)
 	}
 
 	// Start scheduler if enabled
@@ -78,8 +78,8 @@ func main() {
 		a.Scheduler.Stop()
 	}
 
-	if a.Config.Websocket.Enabled {
-		a.WSManager.Shutdown()
+	if err := a.Shutdown(shutdownCtx); err != nil {
+		a.Logger.Error("app shutdown hook error", zap.Error(err))
 	}
 
 	// Cleanup resources

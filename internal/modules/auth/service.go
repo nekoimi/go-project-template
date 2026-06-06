@@ -1,4 +1,4 @@
-package service
+package auth
 
 import (
 	"context"
@@ -9,34 +9,37 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	"github.com/nekoimi/go-project-template/internal/framework"
 	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
-type AuthService interface {
+type Service interface {
 	Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error)
 	Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error)
 }
 
-type authService struct {
+type service struct {
 	userRepo  repository.UserRepository
 	db        *gorm.DB
 	jwtSecret string
 	jwtExpire time.Duration
+	events    *framework.EventBus
 }
 
-func NewAuthService(userRepo repository.UserRepository, db *gorm.DB, jwtSecret string, jwtExpire time.Duration) AuthService {
-	return &authService{
+func NewService(userRepo repository.UserRepository, db *gorm.DB, jwtSecret string, jwtExpire time.Duration, events *framework.EventBus) Service {
+	return &service{
 		userRepo:  userRepo,
 		db:        db,
 		jwtSecret: jwtSecret,
 		jwtExpire: jwtExpire,
+		events:    events,
 	}
 }
 
-func (s *authService) Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error) {
+func (s *service) Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -48,7 +51,6 @@ func (s *authService) Register(ctx context.Context, req model.RegisterRequest) (
 		Password: string(hashed),
 	}
 
-	// 使用事务包裹唯一性检查和创建，防止并发竞态
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		txRepo := s.userRepo.WithTx(tx)
 
@@ -75,10 +77,13 @@ func (s *authService) Register(ctx context.Context, req model.RegisterRequest) (
 		return nil, err
 	}
 
+	userID := idgen.FormatID(user.ID)
+	s.publishUserRegistered(ctx, userID, user.Username, user.Email)
+
 	return &model.AuthResponse{
 		Token: token,
 		User: model.UserInfo{
-			ID:        idgen.FormatID(user.ID),
+			ID:        userID,
 			Username:  user.Username,
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
@@ -86,7 +91,7 @@ func (s *authService) Register(ctx context.Context, req model.RegisterRequest) (
 	}, nil
 }
 
-func (s *authService) Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error) {
+func (s *service) Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error) {
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -115,7 +120,7 @@ func (s *authService) Login(ctx context.Context, req model.LoginRequest) (*model
 	}, nil
 }
 
-func (s *authService) generateToken(userID int64) (string, error) {
+func (s *service) generateToken(userID int64) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": idgen.FormatID(userID),
 		"exp": time.Now().Add(s.jwtExpire).Unix(),
@@ -124,4 +129,18 @@ func (s *authService) generateToken(userID int64) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecret))
+}
+
+func (s *service) publishUserRegistered(ctx context.Context, userID, username, email string) {
+	if s.events == nil {
+		return
+	}
+	_ = s.events.Publish(ctx, framework.Event{
+		Topic: EventUserRegistered,
+		Payload: UserRegisteredEvent{
+			UserID:   userID,
+			Username: username,
+			Email:    email,
+		},
+	})
 }

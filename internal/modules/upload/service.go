@@ -1,4 +1,4 @@
-package service
+package upload
 
 import (
 	"context"
@@ -12,18 +12,18 @@ import (
 	"github.com/nekoimi/go-project-template/internal/storage"
 )
 
-type FileService interface {
+type Service interface {
 	UploadSingle(ctx context.Context, file *multipart.FileHeader, folder string) (*storage.UploadResult, error)
 	UploadMultiple(ctx context.Context, files []*multipart.FileHeader, folder string) ([]*storage.UploadResult, error)
 }
 
-type fileService struct {
+type service struct {
 	storage      storage.FileStorage
 	allowedExts  map[string]bool
 	allowedMIMEs map[string]bool
 }
 
-func NewFileService(storage storage.FileStorage, allowedExts []string, allowedMIMEs []string) FileService {
+func NewService(storage storage.FileStorage, allowedExts []string, allowedMIMEs []string) Service {
 	extMap := make(map[string]bool, len(allowedExts))
 	for _, ext := range allowedExts {
 		extMap[strings.ToLower(ext)] = true
@@ -32,20 +32,19 @@ func NewFileService(storage storage.FileStorage, allowedExts []string, allowedMI
 	for _, m := range allowedMIMEs {
 		mimeMap[strings.ToLower(m)] = true
 	}
-	return &fileService{
+	return &service{
 		storage:      storage,
 		allowedExts:  extMap,
 		allowedMIMEs: mimeMap,
 	}
 }
 
-func (s *fileService) validateFile(fileHeader *multipart.FileHeader) error {
+func (s *service) validateFile(fileHeader *multipart.FileHeader) error {
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if len(s.allowedExts) > 0 && !s.allowedExts[ext] {
 		return fmt.Errorf("file extension %q not allowed", ext)
 	}
 
-	// Detect actual MIME type from file content
 	f, err := fileHeader.Open()
 	if err != nil {
 		return fmt.Errorf("failed to open file for validation: %w", err)
@@ -71,7 +70,7 @@ func (s *fileService) validateFile(fileHeader *multipart.FileHeader) error {
 	return nil
 }
 
-func (s *fileService) UploadSingle(ctx context.Context, fileHeader *multipart.FileHeader, folder string) (*storage.UploadResult, error) {
+func (s *service) UploadSingle(ctx context.Context, fileHeader *multipart.FileHeader, folder string) (*storage.UploadResult, error) {
 	if err := s.validateFile(fileHeader); err != nil {
 		return nil, err
 	}
@@ -92,7 +91,7 @@ func (s *fileService) UploadSingle(ctx context.Context, fileHeader *multipart.Fi
 	return s.storage.Upload(ctx, fh, folder)
 }
 
-func (s *fileService) UploadMultiple(ctx context.Context, files []*multipart.FileHeader, folder string) ([]*storage.UploadResult, error) {
+func (s *service) UploadMultiple(ctx context.Context, files []*multipart.FileHeader, folder string) ([]*storage.UploadResult, error) {
 	var results []*storage.UploadResult
 
 	for _, fileHeader := range files {

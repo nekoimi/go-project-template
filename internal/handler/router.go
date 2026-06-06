@@ -5,23 +5,13 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 
 	"github.com/nekoimi/go-project-template/internal/config"
-	v1 "github.com/nekoimi/go-project-template/internal/handler/v1"
+	"github.com/nekoimi/go-project-template/internal/framework"
 	"github.com/nekoimi/go-project-template/internal/middleware"
-	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
 
-func SetupRouter(
-	cfg *config.Config,
-	logger *zap.Logger,
-	db *gorm.DB,
-	authHandler *v1.AuthHandler,
-	userHandler *v1.UserHandler,
-	uploadHandler *v1.UploadHandler,
-	wsHandler *v1.WSHandler,
-) *gin.Engine {
+func SetupRouter(cfg *config.Config, logger *zap.Logger, health *framework.HealthRegistry) *framework.RouterContext {
 	gin.SetMode(cfg.Server.Mode)
 	r := gin.New()
 
@@ -41,14 +31,14 @@ func SetupRouter(
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// Readiness check (DB ping)
+	// Readiness check
 	r.GET("/ready", func(c *gin.Context) {
-		sqlDB, err := db.DB()
-		if err != nil || sqlDB.Ping() != nil {
-			c.JSON(503, gin.H{"status": "not ready"})
+		result := health.Check(c.Request.Context())
+		if result.Status != "ready" {
+			c.JSON(503, result)
 			return
 		}
-		c.JSON(200, gin.H{"status": "ready"})
+		c.JSON(200, result)
 	})
 
 	// Swagger
@@ -61,36 +51,12 @@ func SetupRouter(
 
 	// API v1 routes
 	api := r.Group("/v1")
-	{
-		// Auth (public)
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register", resp.Handle(authHandler.Register, logger))
-			auth.POST("/login", resp.Handle(authHandler.Login, logger))
-		}
+	protected := api.Group("")
+	protected.Use(middleware.JWTAuth(cfg.JWT.Secret))
 
-		// Protected routes
-		protected := api.Group("")
-		protected.Use(middleware.JWTAuth(cfg.JWT.Secret))
-		{
-			// Users
-			users := protected.Group("/users")
-			{
-				users.GET("/profile", resp.Handle(userHandler.GetProfile, logger))
-			}
-
-			// Upload
-			upload := protected.Group("/upload")
-			{
-				upload.POST("/single", resp.Handle(uploadHandler.UploadSingle, logger))
-				upload.POST("/multiple", resp.Handle(uploadHandler.UploadMultiple, logger))
-			}
-		}
+	return &framework.RouterContext{
+		Engine:    r,
+		API:       api,
+		Protected: protected,
 	}
-
-	if cfg.Websocket.Enabled && wsHandler != nil {
-		r.GET("/ws/v1/chat", wsHandler.Upgrade)
-	}
-
-	return r
 }

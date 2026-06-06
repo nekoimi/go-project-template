@@ -1,23 +1,21 @@
 package app
 
 import (
+	"context"
 	"fmt"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/nekoimi/go-project-template/internal/config"
+	"github.com/nekoimi/go-project-template/internal/framework"
 	"github.com/nekoimi/go-project-template/internal/handler"
-	v1 "github.com/nekoimi/go-project-template/internal/handler/v1"
 	"github.com/nekoimi/go-project-template/internal/pkg/database"
 	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/pkg/logger"
 	"github.com/nekoimi/go-project-template/internal/pkg/timeutil"
-	"github.com/nekoimi/go-project-template/internal/repository"
 	"github.com/nekoimi/go-project-template/internal/scheduler"
-	"github.com/nekoimi/go-project-template/internal/service"
 	"github.com/nekoimi/go-project-template/internal/storage"
 	"github.com/nekoimi/go-project-template/internal/storage/local"
 	"github.com/nekoimi/go-project-template/internal/storage/minio"
@@ -32,6 +30,22 @@ type App struct {
 	Storage   storage.FileStorage
 	WSManager *ws.Manager
 	Scheduler *scheduler.Scheduler
+	Modules   []framework.Module
+	ModuleCtx *framework.ModuleContext
+}
+
+func (a *App) Boot(ctx context.Context) error {
+	if a == nil {
+		return nil
+	}
+	return framework.BootModules(ctx, a.ModuleCtx, a.Modules...)
+}
+
+func (a *App) Shutdown(ctx context.Context) error {
+	if a == nil {
+		return nil
+	}
+	return framework.ShutdownModules(ctx, a.ModuleCtx, a.Modules...)
 }
 
 func Initialize(configPath string) (*App, func(), error) {
@@ -78,43 +92,43 @@ func Initialize(configPath string) (*App, func(), error) {
 	// 7. WebSocket manager
 	wsManager := ws.NewManager(log)
 
-	// 8. Repositories
-	userRepo := repository.NewUserRepository(db)
+	// 8. Health checks
+	health := framework.NewHealthRegistry()
+	health.Register("database", func(ctx context.Context) error {
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+		return sqlDB.PingContext(ctx)
+	})
+	events := framework.NewEventBus()
 
-	// 9. Services
-	jwtExpire := time.Duration(cfg.JWT.ExpireHours) * time.Hour
-	authService := service.NewAuthService(userRepo, db, cfg.JWT.Secret, jwtExpire)
-	userService := service.NewUserService(userRepo)
-	fileService := service.NewFileService(fileStorage, cfg.Storage.Local.AllowedExts, cfg.Storage.Local.AllowedMIMEs)
-
-	// 10. Handlers
-	authHandler := v1.NewAuthHandler(authService, log)
-	userHandler := v1.NewUserHandler(userService, log)
-	uploadHandler := v1.NewUploadHandler(fileService, log)
-
-	var wsHandler *v1.WSHandler
-	if cfg.Websocket.Enabled {
-		wsHandler = v1.NewWSHandler(ws.NewWSHandler(wsManager, cfg.JWT.Secret, log, cfg.Server.AllowedOrigins, cfg.Websocket))
-	}
-
-	// 11. Setup router
-	router := handler.SetupRouter(cfg, log, db, authHandler, userHandler, uploadHandler, wsHandler)
-
-	// 12. Scheduler (optional)
+	// 9. Scheduler (optional)
 	var sched *scheduler.Scheduler
 	if cfg.Scheduler.Enabled {
 		sched = scheduler.New(cfg.Scheduler, log, db)
-		sched.RegisterJobs()
+	}
+
+	// 10. Setup base router
+	router := handler.SetupRouter(cfg, log, health)
+
+	// 11. Register feature modules
+	moduleCtx := framework.NewModuleContext(cfg, log, db, router, sched, fileStorage, wsManager, health, events)
+	modules := builtinModules()
+	if err := framework.RegisterModules(moduleCtx, modules...); err != nil {
+		return nil, nil, err
 	}
 
 	app := &App{
-		Engine:    router,
+		Engine:    router.Engine,
 		Config:    cfg,
 		Logger:    log,
 		DB:        db,
 		Storage:   fileStorage,
 		WSManager: wsManager,
 		Scheduler: sched,
+		Modules:   modules,
+		ModuleCtx: moduleCtx,
 	}
 
 	cleanup := func() {

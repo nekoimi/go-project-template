@@ -26,6 +26,18 @@ scheduler:
   enabled: true
   timezone: "Asia/Shanghai"
 
+modules:
+  auth:
+    enabled: true
+  user:
+    enabled: true
+  upload:
+    enabled: true
+  websocket:
+    enabled: true
+  example_job:
+    enabled: true
+
 websocket:
   enabled: true
   read_buffer_size: 2048

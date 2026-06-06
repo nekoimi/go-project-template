@@ -1,20 +1,19 @@
-package v1
+package user
 
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/service"
 )
 
-type UserHandler struct {
-	userService service.UserService
+type Handler struct {
+	userService Service
 	logger      *zap.Logger
 }
 
-func NewUserHandler(userService service.UserService, logger *zap.Logger) *UserHandler {
-	return &UserHandler{userService: userService, logger: logger}
+func NewHandler(userService Service, logger *zap.Logger) *Handler {
+	return &Handler{userService: userService, logger: logger}
 }
 
 // GetProfile godoc
@@ -26,7 +25,7 @@ func NewUserHandler(userService service.UserService, logger *zap.Logger) *UserHa
 // @Failure      401  {object}  resp.JsonResponse
 // @Failure      404  {object}  resp.JsonResponse
 // @Router       /users/profile [get]
-func (h *UserHandler) GetProfile(c *gin.Context) (any, error) {
+func (h *Handler) GetProfile(c *gin.Context) (any, error) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		return nil, errcode.New(errcode.Unauthorized)

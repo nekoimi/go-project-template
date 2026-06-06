@@ -1,4 +1,4 @@
-package service
+package user
 
 import (
 	"context"
@@ -12,19 +12,19 @@ import (
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
-type UserService interface {
+type Service interface {
 	GetProfile(ctx context.Context, userID string) (*model.UserResponse, error)
 }
 
-type userService struct {
+type service struct {
 	userRepo repository.UserRepository
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
-	return &userService{userRepo: userRepo}
+func NewService(userRepo repository.UserRepository) Service {
+	return &service{userRepo: userRepo}
 }
 
-func (s *userService) GetProfile(ctx context.Context, userID string) (*model.UserResponse, error) {
+func (s *service) GetProfile(ctx context.Context, userID string) (*model.UserResponse, error) {
 	uid, err := idgen.ParseID(userID)
 	if err != nil {
 		return nil, errcode.New(errcode.Unauthorized)

@@ -1,20 +1,19 @@
-package v1
+package upload
 
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
-	"github.com/nekoimi/go-project-template/internal/service"
 )
 
-type UploadHandler struct {
-	fileService service.FileService
+type Handler struct {
+	fileService Service
 	logger      *zap.Logger
 }
 
-func NewUploadHandler(fileService service.FileService, logger *zap.Logger) *UploadHandler {
-	return &UploadHandler{fileService: fileService, logger: logger}
+func NewHandler(fileService Service, logger *zap.Logger) *Handler {
+	return &Handler{fileService: fileService, logger: logger}
 }
 
 // UploadSingle godoc
@@ -28,7 +27,7 @@ func NewUploadHandler(fileService service.FileService, logger *zap.Logger) *Uplo
 // @Success      200    {object}  resp.JsonResponse
 // @Failure      400    {object}  resp.JsonResponse
 // @Router       /upload/single [post]
-func (h *UploadHandler) UploadSingle(c *gin.Context) (any, error) {
+func (h *Handler) UploadSingle(c *gin.Context) (any, error) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		return nil, errcode.NewWithDetail(errcode.BadRequest, "missing file")
@@ -50,7 +49,7 @@ func (h *UploadHandler) UploadSingle(c *gin.Context) (any, error) {
 // @Success      200    {object}  resp.JsonResponse
 // @Failure      400    {object}  resp.JsonResponse
 // @Router       /upload/multiple [post]
-func (h *UploadHandler) UploadMultiple(c *gin.Context) (any, error) {
+func (h *Handler) UploadMultiple(c *gin.Context) (any, error) {
 	form, err := c.MultipartForm()
 	if err != nil {
 		return nil, errcode.NewWithDetail(errcode.BadRequest, "invalid multipart form")
