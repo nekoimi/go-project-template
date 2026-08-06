@@ -104,7 +104,7 @@ websocket:
 
 要求完全满足：
 - 支持**本地存储**（开发/小项目最方便）
-- 支持**MinIO**（S3 兼容，生产推荐）
+- 支持 **S3 兼容对象存储**（MinIO、RustFS、AWS S3 等）
 - **高度可扩展**：以后加 AWS S3、阿里云 OSS、腾讯 COS 等，只需新增一个实现类即可，无需改动业务代码
 
 ### 1. 更新后的项目目录结构（新增 storage 模块）
@@ -124,11 +124,12 @@ goscaffold/
 │   │   └── middleware/
 │   ├── storage/                     # 新增：文件存储核心（策略模式）
 │   │   ├── storage.go               # 接口定义 FileStorage
-│   │   ├── factory.go               # 工厂 + 根据配置自动选择驱动
+│   │   ├── factory/                 # 工厂 + 根据配置自动选择驱动
+│   │   │   └── factory.go
 │   │   ├── local/                   # 本地文件系统实现
 │   │   │   └── local.go
-│   │   ├── minio/                   # MinIO 实现
-│   │   │   └── minio.go
+│   │   ├── s3/                      # S3 兼容实现（MinIO / RustFS / AWS S3）
+│   │   │   └── s3.go
 │   │   └── types.go                 # 公共类型（UploadResult、FileHeader 等）
 │   ├── service/                     # 可新增 file_service.go（业务层包装）
 │   ├── websocket/                   # （已有）
@@ -164,21 +165,29 @@ server:
 # ... 原有 database、jwt、websocket、scheduler 配置
 
 storage:
-  driver: "local"          # 可选值：local | minio
+  driver: "local"          # 可选值：local | s3
   base_url: "http://localhost:8080/uploads"   # 公开访问前缀（本地用）
-  
+
+  # 上传策略（与具体存储驱动无关）
+  upload:
+    max_file_size: 10       # MB
+    allowed_exts: [".jpg", ".png", ".pdf"]
+    allowed_mimes: ["image/jpeg", "image/png", "application/pdf"]
+
   # 本地驱动专用
   local:
     upload_dir: "./uploads"   # 项目根目录下的 uploads 文件夹（.gitignore 已忽略）
-    max_file_size: 10         # MB
-  
-  # MinIO 驱动专用
-  minio:
+
+  # S3 兼容驱动专用
+  s3:
+    provider: "minio"         # minio | rustfs | aws
     endpoint: "localhost:9000"
     access_key: "minioadmin"
     secret_key: "minioadmin"
     bucket: "goscaffold"
+    region: "us-east-1"
     use_ssl: false
+    force_path_style: true
     public_url: "http://localhost:9000"   # 用于生成公开访问 URL
 ```
 
@@ -194,7 +203,8 @@ storage:
   }
   ```
 
-- `factory.go` 根据 `config.Storage.Driver` 自动返回对应实现（`NewStorage`）。
+- `internal/storage/factory` 根据 `config.Storage.Driver` 自动返回对应实现（`New`）。
+- `internal/storage/s3` 使用 S3 协议客户端，MinIO、RustFS、AWS S3 等兼容服务共用同一实现。
 - 业务代码永远只依赖 `storage.FileStorage` 接口，完全解耦。
 - 统一返回 `UploadResult`（包含 `Path`、`URL`、`Size`、`MimeType` 等）。
 
@@ -234,6 +244,4 @@ services:
     volumes:
       - minio-data:/data
 ```
-
-
 

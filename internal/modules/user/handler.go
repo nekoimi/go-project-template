@@ -21,7 +21,7 @@ func NewHandler(userService Service, logger *zap.Logger) *Handler {
 // @Tags         users
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  resp.JsonResponse{data=model.UserResponse}
+// @Success      200  {object}  resp.JsonResponse{data=user.UserResponse}
 // @Failure      401  {object}  resp.JsonResponse
 // @Failure      404  {object}  resp.JsonResponse
 // @Router       /users/profile [get]

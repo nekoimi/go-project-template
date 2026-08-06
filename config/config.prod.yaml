@@ -49,15 +49,19 @@ websocket:
   max_message_size: 10240
 
 storage:
-  driver: "minio"
+  driver: "s3"
   base_url: "https://your-domain.com"
+  upload:
+    max_file_size: 20
   local:
     upload_dir: "./uploads"
-    max_file_size: 20
-  minio:
+  s3:
+    provider: "minio"
     endpoint: "minio:9000"
-    access_key: ${MINIO_ACCESS_KEY}
-    secret_key: ${MINIO_SECRET_KEY}
+    access_key: ${S3_ACCESS_KEY}
+    secret_key: ${S3_SECRET_KEY}
     bucket: "go-template"
+    region: "us-east-1"
     use_ssl: false
+    force_path_style: true
     public_url: "https://minio.your-domain.com"

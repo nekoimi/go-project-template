@@ -19,11 +19,12 @@ type Service interface {
 
 type service struct {
 	storage      storage.FileStorage
+	maxSize      int64
 	allowedExts  map[string]bool
 	allowedMIMEs map[string]bool
 }
 
-func NewService(storage storage.FileStorage, allowedExts []string, allowedMIMEs []string) Service {
+func NewService(storage storage.FileStorage, maxFileSizeMB int, allowedExts []string, allowedMIMEs []string) Service {
 	extMap := make(map[string]bool, len(allowedExts))
 	for _, ext := range allowedExts {
 		extMap[strings.ToLower(ext)] = true
@@ -34,12 +35,17 @@ func NewService(storage storage.FileStorage, allowedExts []string, allowedMIMEs 
 	}
 	return &service{
 		storage:      storage,
+		maxSize:      int64(maxFileSizeMB) * 1024 * 1024,
 		allowedExts:  extMap,
 		allowedMIMEs: mimeMap,
 	}
 }
 
 func (s *service) validateFile(fileHeader *multipart.FileHeader) error {
+	if s.maxSize > 0 && fileHeader.Size > s.maxSize {
+		return fmt.Errorf("file size %d exceeds max allowed %d", fileHeader.Size, s.maxSize)
+	}
+
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if len(s.allowedExts) > 0 && !s.allowedExts[ext] {
 		return fmt.Errorf("file extension %q not allowed", ext)

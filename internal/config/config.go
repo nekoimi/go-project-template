@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Config struct {
 	Server    ServerConfig    `mapstructure:"server"`
@@ -86,24 +89,74 @@ type WebsocketConfig struct {
 }
 
 type StorageConfig struct {
-	Driver  string      `mapstructure:"driver"` // local / minio
-	BaseURL string      `mapstructure:"base_url"`
-	Local   LocalConfig `mapstructure:"local"`
-	Minio   MinioConfig `mapstructure:"minio"`
+	Driver  string       `mapstructure:"driver"` // local / s3
+	BaseURL string       `mapstructure:"base_url"`
+	Upload  UploadConfig `mapstructure:"upload"`
+	Local   LocalConfig  `mapstructure:"local"`
+	S3      S3Config     `mapstructure:"s3"`
+	// Minio is kept for backward compatibility with existing configuration
+	// files. It is normalized into S3 when driver is set to minio.
+	Minio S3Config `mapstructure:"minio"`
 }
 
 type LocalConfig struct {
-	UploadDir    string   `mapstructure:"upload_dir"`
+	UploadDir string `mapstructure:"upload_dir"`
+	// Deprecated: use StorageConfig.Upload. These fields remain readable so
+	// older YAML files can be normalized during migration.
+	MaxFileSize  int      `mapstructure:"max_file_size"`
+	AllowedExts  []string `mapstructure:"allowed_exts"`
+	AllowedMIMEs []string `mapstructure:"allowed_mimes"`
+}
+
+type UploadConfig struct {
 	MaxFileSize  int      `mapstructure:"max_file_size"` // MB
 	AllowedExts  []string `mapstructure:"allowed_exts"`
 	AllowedMIMEs []string `mapstructure:"allowed_mimes"`
 }
 
-type MinioConfig struct {
-	Endpoint  string `mapstructure:"endpoint"`
-	AccessKey string `mapstructure:"access_key"`
-	SecretKey string `mapstructure:"secret_key"`
-	Bucket    string `mapstructure:"bucket"`
-	UseSSL    bool   `mapstructure:"use_ssl"`
-	PublicURL string `mapstructure:"public_url"`
+type S3Config struct {
+	Provider       string `mapstructure:"provider"` // minio / rustfs / aws
+	Endpoint       string `mapstructure:"endpoint"`
+	AccessKey      string `mapstructure:"access_key"`
+	SecretKey      string `mapstructure:"secret_key"`
+	Bucket         string `mapstructure:"bucket"`
+	Region         string `mapstructure:"region"`
+	UseSSL         bool   `mapstructure:"use_ssl"`
+	ForcePathStyle bool   `mapstructure:"force_path_style"`
+	PublicURL      string `mapstructure:"public_url"`
+}
+
+// Normalize converts legacy storage settings to the protocol-oriented S3
+// configuration and moves upload policy out of the local filesystem driver.
+func (c *StorageConfig) Normalize() {
+	if c == nil {
+		return
+	}
+
+	c.Driver = strings.ToLower(strings.TrimSpace(c.Driver))
+	if c.Driver == "" {
+		c.Driver = "local"
+	}
+
+	if c.Driver == "minio" {
+		c.Driver = "s3"
+		c.S3 = c.Minio
+		if c.S3.Provider == "" {
+			c.S3.Provider = "minio"
+		}
+	}
+
+	if c.Driver == "s3" && c.S3.Provider == "" {
+		c.S3.Provider = "s3"
+	}
+
+	if c.Local.MaxFileSize > 0 {
+		c.Upload.MaxFileSize = c.Local.MaxFileSize
+	}
+	if len(c.Local.AllowedExts) > 0 {
+		c.Upload.AllowedExts = append([]string(nil), c.Local.AllowedExts...)
+	}
+	if len(c.Local.AllowedMIMEs) > 0 {
+		c.Upload.AllowedMIMEs = append([]string(nil), c.Local.AllowedMIMEs...)
+	}
 }

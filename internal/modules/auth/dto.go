@@ -1,4 +1,4 @@
-package model
+package auth
 
 import "github.com/nekoimi/go-project-template/internal/pkg/timeutil"
 
@@ -19,8 +19,8 @@ type AuthResponse struct {
 }
 
 type UserInfo struct {
-	ID        string            `json:"id"`
-	Username  string            `json:"username"`
-	Email     string            `json:"email"`
+	ID        string             `json:"id"`
+	Username  string             `json:"username"`
+	Email     string             `json:"email"`
 	CreatedAt timeutil.LocalTime `json:"created_at"`
 }

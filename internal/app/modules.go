@@ -2,7 +2,6 @@ package app
 
 import (
 	"github.com/nekoimi/go-project-template/internal/framework"
-	"github.com/nekoimi/go-project-template/internal/module"
 
 	_ "github.com/nekoimi/go-project-template/internal/modules/auth"
 	_ "github.com/nekoimi/go-project-template/internal/modules/examplejob"
@@ -12,9 +11,9 @@ import (
 )
 
 func registeredModules() []framework.Module {
-	return module.Modules(module.ScopeHTTP, module.ScopeScheduler)
+	return framework.Modules(framework.ScopeHTTP, framework.ScopeScheduler)
 }
 
 func registeredSchedulerModules() []framework.Module {
-	return module.Modules(module.ScopeScheduler)
+	return framework.Modules(framework.ScopeScheduler)
 }

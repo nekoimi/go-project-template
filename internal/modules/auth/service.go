@@ -9,16 +9,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	userdomain "github.com/nekoimi/go-project-template/internal/domain/user"
 	"github.com/nekoimi/go-project-template/internal/framework"
-	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
 type Service interface {
-	Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error)
-	Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error)
+	Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error)
+	Login(ctx context.Context, req LoginRequest) (*AuthResponse, error)
 }
 
 type service struct {
@@ -39,13 +39,13 @@ func NewService(userRepo repository.UserRepository, db *gorm.DB, jwtSecret strin
 	}
 }
 
-func (s *service) Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error) {
+func (s *service) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	user := &model.User{
+	user := &userdomain.User{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: string(hashed),
@@ -80,9 +80,9 @@ func (s *service) Register(ctx context.Context, req model.RegisterRequest) (*mod
 	userID := idgen.FormatID(user.ID)
 	s.publishUserRegistered(ctx, userID, user.Username, user.Email)
 
-	return &model.AuthResponse{
+	return &AuthResponse{
 		Token: token,
-		User: model.UserInfo{
+		User: UserInfo{
 			ID:        userID,
 			Username:  user.Username,
 			Email:     user.Email,
@@ -91,7 +91,7 @@ func (s *service) Register(ctx context.Context, req model.RegisterRequest) (*mod
 	}, nil
 }
 
-func (s *service) Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error) {
+func (s *service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, error) {
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -109,9 +109,9 @@ func (s *service) Login(ctx context.Context, req model.LoginRequest) (*model.Aut
 		return nil, err
 	}
 
-	return &model.AuthResponse{
+	return &AuthResponse{
 		Token: token,
-		User: model.UserInfo{
+		User: UserInfo{
 			ID:        idgen.FormatID(user.ID),
 			Username:  user.Username,
 			Email:     user.Email,

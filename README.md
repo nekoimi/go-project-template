@@ -94,13 +94,16 @@ make run-scheduler
 | `JWT_SECRET` | jwt.secret |
 | `TZ` | server.timezone |
 | `SNOWFLAKE_NODE_ID` | snowflake.node_id |
-| `MINIO_ACCESS_KEY` | storage.minio.access_key |
-| `MINIO_SECRET_KEY` | storage.minio.secret_key |
-| `MINIO_ENDPOINT` | storage.minio.endpoint |
-| `MINIO_PUBLIC_URL` | storage.minio.public_url |
-| `MINIO_BUCKET` | storage.minio.bucket |
+| `S3_ACCESS_KEY` | storage.s3.access_key |
+| `S3_SECRET_KEY` | storage.s3.secret_key |
+| `S3_ENDPOINT` | storage.s3.endpoint |
+| `S3_PUBLIC_URL` | storage.s3.public_url |
+| `S3_BUCKET` | storage.s3.bucket |
+| `S3_REGION` | storage.s3.region |
+| `S3_USE_SSL` | storage.s3.use_ssl |
+| `S3_FORCE_PATH_STYLE` | storage.s3.force_path_style |
 
-生产使用的 `config/config.prod.yaml` 中等占位符（如 `${MINIO_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。
+生产使用的 `config/config.prod.yaml` 中等占位符（如 `${S3_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。为平滑迁移，`MINIO_ACCESS_KEY`、`MINIO_SECRET_KEY`、`MINIO_ENDPOINT`、`MINIO_PUBLIC_URL`、`MINIO_BUCKET` 仍可作为对应 `S3_*` 环境变量的兼容别名。
 
 多实例部署时，请为每个实例设置不同的 `SNOWFLAKE_NODE_ID`，避免雪花 ID 冲突。
 

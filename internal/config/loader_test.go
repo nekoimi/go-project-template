@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestLoad_MinIOBindEnvOverridesYAML(t *testing.T) {
+func TestLoad_LegacyMinIOConfigNormalizesToS3(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cfg.yaml")
 	content := `
@@ -64,6 +64,51 @@ storage:
 	if cfg.Storage.Minio.SecretKey != "env-secret" {
 		t.Fatalf("SecretKey = %q, want env-secret", cfg.Storage.Minio.SecretKey)
 	}
+	if cfg.Storage.Driver != "s3" {
+		t.Fatalf("Driver = %q, want s3", cfg.Storage.Driver)
+	}
+	if cfg.Storage.S3.Provider != "minio" {
+		t.Fatalf("Provider = %q, want minio", cfg.Storage.S3.Provider)
+	}
+	if cfg.Storage.S3.AccessKey != "env-access" || cfg.Storage.S3.SecretKey != "env-secret" {
+		t.Fatalf("S3 credentials = %q/%q, want env overrides", cfg.Storage.S3.AccessKey, cfg.Storage.S3.SecretKey)
+	}
+}
+
+func TestLoad_S3BindEnvOverridesYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cfg.yaml")
+	content := `
+storage:
+  driver: s3
+  s3:
+    provider: rustfs
+    endpoint: "localhost:9000"
+    access_key: from-yaml
+    secret_key: from-yaml
+    bucket: go-template
+    region: us-east-1
+    use_ssl: false
+    force_path_style: true
+    public_url: "http://localhost:9000"
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("S3_ACCESS_KEY", "rustfs-access")
+	t.Setenv("S3_SECRET_KEY", "rustfs-secret")
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Storage.S3.Provider != "rustfs" {
+		t.Fatalf("Provider = %q, want rustfs", cfg.Storage.S3.Provider)
+	}
+	if cfg.Storage.S3.AccessKey != "rustfs-access" || cfg.Storage.S3.SecretKey != "rustfs-secret" {
+		t.Fatalf("S3 credentials = %q/%q, want env overrides", cfg.Storage.S3.AccessKey, cfg.Storage.S3.SecretKey)
+	}
 }
 
 func TestLoad_databaseBindEnvOverridesYAML(t *testing.T) {
@@ -112,5 +157,8 @@ storage:
 	}
 	if cfg.Database.Host != "db.example" {
 		t.Fatalf("Host = %q, want db.example", cfg.Database.Host)
+	}
+	if cfg.Storage.Upload.MaxFileSize != 10 {
+		t.Fatalf("Upload.MaxFileSize = %d, want legacy local value 10", cfg.Storage.Upload.MaxFileSize)
 	}
 }

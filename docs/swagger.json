@@ -28,7 +28,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.LoginRequest"
+                            "$ref": "#/definitions/auth.LoginRequest"
                         }
                     }
                 ],
@@ -44,7 +44,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.AuthResponse"
+                                            "$ref": "#/definitions/auth.AuthResponse"
                                         }
                                     }
                                 }
@@ -85,7 +85,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.RegisterRequest"
+                            "$ref": "#/definitions/auth.RegisterRequest"
                         }
                     }
                 ],
@@ -101,7 +101,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.AuthResponse"
+                                            "$ref": "#/definitions/auth.AuthResponse"
                                         }
                                     }
                                 }
@@ -249,7 +249,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.UserResponse"
+                                            "$ref": "#/definitions/user.UserResponse"
                                         }
                                     }
                                 }
@@ -273,18 +273,18 @@
         }
     },
     "definitions": {
-        "model.AuthResponse": {
+        "auth.AuthResponse": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/model.UserInfo"
+                    "$ref": "#/definitions/auth.UserInfo"
                 }
             }
         },
-        "model.LoginRequest": {
+        "auth.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -299,7 +299,7 @@
                 }
             }
         },
-        "model.RegisterRequest": {
+        "auth.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -322,7 +322,7 @@
                 }
             }
         },
-        "model.UserInfo": {
+        "auth.UserInfo": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -332,29 +332,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "string",
-                    "example": "1234567890123456789"
-                },
-                "username": {
                     "type": "string"
-                }
-            }
-        },
-        "model.UserResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "$ref": "#/definitions/timeutil.LocalTime"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "1234567890123456789"
-                },
-                "updated_at": {
-                    "$ref": "#/definitions/timeutil.LocalTime"
                 },
                 "username": {
                     "type": "string"
@@ -378,6 +356,26 @@
             "type": "object",
             "properties": {
                 "time.Time": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "$ref": "#/definitions/timeutil.LocalTime"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "$ref": "#/definitions/timeutil.LocalTime"
+                },
+                "username": {
                     "type": "string"
                 }
             }

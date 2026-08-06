@@ -17,14 +17,12 @@ import (
 type localStorage struct {
 	uploadDir string
 	baseURL   string
-	maxSize   int64 // bytes
 }
 
 func New(cfg config.StorageConfig) storage.FileStorage {
 	return &localStorage{
 		uploadDir: cfg.Local.UploadDir,
 		baseURL:   cfg.BaseURL,
-		maxSize:   int64(cfg.Local.MaxFileSize) * 1024 * 1024,
 	}
 }
 
@@ -42,10 +40,6 @@ func (s *localStorage) safeJoin(elem ...string) (string, error) {
 }
 
 func (s *localStorage) Upload(_ context.Context, file *storage.FileHeader, folder string) (*storage.UploadResult, error) {
-	if file.Size > s.maxSize {
-		return nil, fmt.Errorf("file size %d exceeds max allowed %d", file.Size, s.maxSize)
-	}
-
 	// Sanitize folder: clean + reject traversal
 	folder = filepath.Clean(folder)
 	if strings.Contains(folder, "..") {

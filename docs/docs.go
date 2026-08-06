@@ -34,7 +34,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.LoginRequest"
+                            "$ref": "#/definitions/auth.LoginRequest"
                         }
                     }
                 ],
@@ -50,7 +50,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.AuthResponse"
+                                            "$ref": "#/definitions/auth.AuthResponse"
                                         }
                                     }
                                 }
@@ -91,7 +91,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.RegisterRequest"
+                            "$ref": "#/definitions/auth.RegisterRequest"
                         }
                     }
                 ],
@@ -107,7 +107,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.AuthResponse"
+                                            "$ref": "#/definitions/auth.AuthResponse"
                                         }
                                     }
                                 }
@@ -255,7 +255,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.UserResponse"
+                                            "$ref": "#/definitions/user.UserResponse"
                                         }
                                     }
                                 }
@@ -279,18 +279,18 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.AuthResponse": {
+        "auth.AuthResponse": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/model.UserInfo"
+                    "$ref": "#/definitions/auth.UserInfo"
                 }
             }
         },
-        "model.LoginRequest": {
+        "auth.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -305,7 +305,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.RegisterRequest": {
+        "auth.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -328,7 +328,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UserInfo": {
+        "auth.UserInfo": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -338,29 +338,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string",
-                    "example": "1234567890123456789"
-                },
-                "username": {
                     "type": "string"
-                }
-            }
-        },
-        "model.UserResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "$ref": "#/definitions/timeutil.LocalTime"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "1234567890123456789"
-                },
-                "updated_at": {
-                    "$ref": "#/definitions/timeutil.LocalTime"
                 },
                 "username": {
                     "type": "string"
@@ -384,6 +362,26 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "time.Time": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "$ref": "#/definitions/timeutil.LocalTime"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "$ref": "#/definitions/timeutil.LocalTime"
+                },
+                "username": {
                     "type": "string"
                 }
             }

@@ -1,13 +1,13 @@
 basePath: /v1
 definitions:
-  model.AuthResponse:
+  auth.AuthResponse:
     properties:
       token:
         type: string
       user:
-        $ref: '#/definitions/model.UserInfo'
+        $ref: '#/definitions/auth.UserInfo'
     type: object
-  model.LoginRequest:
+  auth.LoginRequest:
     properties:
       email:
         type: string
@@ -17,7 +17,7 @@ definitions:
     - email
     - password
     type: object
-  model.RegisterRequest:
+  auth.RegisterRequest:
     properties:
       email:
         type: string
@@ -34,29 +34,14 @@ definitions:
     - password
     - username
     type: object
-  model.UserInfo:
+  auth.UserInfo:
     properties:
       created_at:
         $ref: '#/definitions/timeutil.LocalTime'
       email:
         type: string
       id:
-        example: "1234567890123456789"
         type: string
-      username:
-        type: string
-    type: object
-  model.UserResponse:
-    properties:
-      created_at:
-        $ref: '#/definitions/timeutil.LocalTime'
-      email:
-        type: string
-      id:
-        example: "1234567890123456789"
-        type: string
-      updated_at:
-        $ref: '#/definitions/timeutil.LocalTime'
       username:
         type: string
     type: object
@@ -72,6 +57,19 @@ definitions:
   timeutil.LocalTime:
     properties:
       time.Time:
+        type: string
+    type: object
+  user.UserResponse:
+    properties:
+      created_at:
+        $ref: '#/definitions/timeutil.LocalTime'
+      email:
+        type: string
+      id:
+        type: string
+      updated_at:
+        $ref: '#/definitions/timeutil.LocalTime'
+      username:
         type: string
     type: object
 host: localhost:8080
@@ -91,7 +89,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/model.LoginRequest'
+          $ref: '#/definitions/auth.LoginRequest'
       produces:
       - application/json
       responses:
@@ -102,7 +100,7 @@ paths:
             - $ref: '#/definitions/resp.JsonResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/model.AuthResponse'
+                  $ref: '#/definitions/auth.AuthResponse'
               type: object
         "400":
           description: Bad Request
@@ -125,7 +123,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/model.RegisterRequest'
+          $ref: '#/definitions/auth.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -136,7 +134,7 @@ paths:
             - $ref: '#/definitions/resp.JsonResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/model.AuthResponse'
+                  $ref: '#/definitions/auth.AuthResponse'
               type: object
         "400":
           description: Bad Request
@@ -224,7 +222,7 @@ paths:
             - $ref: '#/definitions/resp.JsonResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/model.UserResponse'
+                  $ref: '#/definitions/user.UserResponse'
               type: object
         "401":
           description: Unauthorized

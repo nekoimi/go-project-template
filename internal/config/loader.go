@@ -31,6 +31,17 @@ func Load(configPath string) (*Config, error) {
 	_ = v.BindEnv("storage.minio.public_url", "MINIO_PUBLIC_URL")
 	_ = v.BindEnv("storage.minio.bucket", "MINIO_BUCKET")
 
+	// Generic S3-compatible object storage. MINIO_* remains a fallback so
+	// existing deployments can migrate without rotating environment names.
+	_ = v.BindEnv("storage.s3.access_key", "S3_ACCESS_KEY", "MINIO_ACCESS_KEY")
+	_ = v.BindEnv("storage.s3.secret_key", "S3_SECRET_KEY", "MINIO_SECRET_KEY")
+	_ = v.BindEnv("storage.s3.endpoint", "S3_ENDPOINT", "MINIO_ENDPOINT")
+	_ = v.BindEnv("storage.s3.public_url", "S3_PUBLIC_URL", "MINIO_PUBLIC_URL")
+	_ = v.BindEnv("storage.s3.bucket", "S3_BUCKET", "MINIO_BUCKET")
+	_ = v.BindEnv("storage.s3.region", "S3_REGION")
+	_ = v.BindEnv("storage.s3.use_ssl", "S3_USE_SSL")
+	_ = v.BindEnv("storage.s3.force_path_style", "S3_FORCE_PATH_STYLE")
+
 	if err := v.ReadInConfig(); err != nil {
 		return nil, err
 	}
@@ -39,6 +50,7 @@ func Load(configPath string) (*Config, error) {
 	if err := v.Unmarshal(cfg); err != nil {
 		return nil, err
 	}
+	cfg.Storage.Normalize()
 
 	return cfg, nil
 }
@@ -91,17 +103,22 @@ func DefaultConfig() *Config {
 		Storage: StorageConfig{
 			Driver:  "local",
 			BaseURL: "http://localhost:8080/uploads",
-			Local: LocalConfig{
-				UploadDir:   "./uploads",
+			Upload: UploadConfig{
 				MaxFileSize: 10,
 			},
-			Minio: MinioConfig{
-				Endpoint:  "localhost:9000",
-				AccessKey: "minioadmin",
-				SecretKey: "minioadmin",
-				Bucket:    "go-template",
-				UseSSL:    false,
-				PublicURL: "http://localhost:9000",
+			Local: LocalConfig{
+				UploadDir: "./uploads",
+			},
+			S3: S3Config{
+				Provider:       "minio",
+				Endpoint:       "localhost:9000",
+				AccessKey:      "minioadmin",
+				SecretKey:      "minioadmin",
+				Bucket:         "go-template",
+				Region:         "us-east-1",
+				UseSSL:         false,
+				ForcePathStyle: true,
+				PublicURL:      "http://localhost:9000",
 			},
 		},
 		Modules: ModulesConfig{

@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/nekoimi/go-project-template/internal/model"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 )
 
@@ -22,13 +21,13 @@ func NewHandler(authService Service, logger *zap.Logger) *Handler {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body  body      model.RegisterRequest  true  "Register request"
-// @Success      200   {object}  resp.JsonResponse{data=model.AuthResponse}
+// @Param        body  body      auth.RegisterRequest  true  "Register request"
+// @Success      200   {object}  resp.JsonResponse{data=auth.AuthResponse}
 // @Failure      400   {object}  resp.JsonResponse
 // @Failure      409   {object}  resp.JsonResponse
 // @Router       /auth/register [post]
 func (h *Handler) Register(c *gin.Context) (any, error) {
-	var req model.RegisterRequest
+	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return nil, errcode.NewWithDetail(errcode.Validation, err.Error())
 	}
@@ -41,13 +40,13 @@ func (h *Handler) Register(c *gin.Context) (any, error) {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body  body      model.LoginRequest  true  "Login request"
-// @Success      200   {object}  resp.JsonResponse{data=model.AuthResponse}
+// @Param        body  body      auth.LoginRequest  true  "Login request"
+// @Success      200   {object}  resp.JsonResponse{data=auth.AuthResponse}
 // @Failure      400   {object}  resp.JsonResponse
 // @Failure      401   {object}  resp.JsonResponse
 // @Router       /auth/login [post]
 func (h *Handler) Login(c *gin.Context) (any, error) {
-	var req model.LoginRequest
+	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return nil, errcode.NewWithDetail(errcode.Validation, err.Error())
 	}

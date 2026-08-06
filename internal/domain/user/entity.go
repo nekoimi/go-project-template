@@ -1,4 +1,4 @@
-package model
+package user
 
 import (
 	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
@@ -6,11 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// User is the persistence/domain entity shared by authentication and user
+// modules.
 type User struct {
-	ID        int64             `gorm:"primaryKey;type:bigint" json:"id,string"`
-	Username  string            `gorm:"type:varchar(50);uniqueIndex;not null" json:"username"`
-	Email     string            `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
-	Password  string            `gorm:"type:varchar(255);not null" json:"-"`
+	ID        int64              `gorm:"primaryKey;type:bigint" json:"id,string"`
+	Username  string             `gorm:"type:varchar(50);uniqueIndex;not null" json:"username"`
+	Email     string             `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
+	Password  string             `gorm:"type:varchar(255);not null" json:"-"`
 	CreatedAt timeutil.LocalTime `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt timeutil.LocalTime `gorm:"autoUpdateTime" json:"updated_at"`
 }

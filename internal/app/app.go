@@ -18,8 +18,7 @@ import (
 	"github.com/nekoimi/go-project-template/internal/pkg/timeutil"
 	"github.com/nekoimi/go-project-template/internal/scheduler"
 	"github.com/nekoimi/go-project-template/internal/storage"
-	"github.com/nekoimi/go-project-template/internal/storage/local"
-	"github.com/nekoimi/go-project-template/internal/storage/minio"
+	storagefactory "github.com/nekoimi/go-project-template/internal/storage/factory"
 	ws "github.com/nekoimi/go-project-template/internal/websocket"
 )
 
@@ -85,15 +84,9 @@ func initialize(configPath string, modules []framework.Module) (*App, func(), er
 	}
 
 	// 6. Storage
-	var fileStorage storage.FileStorage
-	switch cfg.Storage.Driver {
-	case "minio":
-		fileStorage, err = minio.New(cfg.Storage)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create minio storage: %w", err)
-		}
-	default:
-		fileStorage = local.New(cfg.Storage)
+	fileStorage, err := storagefactory.New(cfg.Storage)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create storage: %w", err)
 	}
 
 	// 7. WebSocket manager

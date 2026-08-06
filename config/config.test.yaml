@@ -46,13 +46,17 @@ websocket:
 storage:
   driver: "local"
   base_url: "http://localhost:8081/uploads"
+  upload:
+    max_file_size: 5
   local:
     upload_dir: "./test-uploads"
-    max_file_size: 5
-  minio:
+  s3:
+    provider: "minio"
     endpoint: "localhost:9000"
     access_key: "minioadmin"
     secret_key: "minioadmin"
     bucket: "go-template-test"
+    region: "us-east-1"
     use_ssl: false
+    force_path_style: true
     public_url: "http://localhost:9000"

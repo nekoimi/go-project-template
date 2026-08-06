@@ -2,12 +2,11 @@ package upload
 
 import (
 	"github.com/nekoimi/go-project-template/internal/framework"
-	"github.com/nekoimi/go-project-template/internal/module"
 	"github.com/nekoimi/go-project-template/internal/pkg/resp"
 )
 
 func init() {
-	module.Register(NewModule(), module.ScopeHTTP)
+	framework.Register(NewModule(), framework.ScopeHTTP)
 }
 
 type Module struct{}
@@ -27,8 +26,9 @@ func (m *Module) Register(ctx *framework.ModuleContext) error {
 
 	fileService := NewService(
 		ctx.Storage,
-		ctx.Config.Storage.Local.AllowedExts,
-		ctx.Config.Storage.Local.AllowedMIMEs,
+		ctx.Config.Storage.Upload.MaxFileSize,
+		ctx.Config.Storage.Upload.AllowedExts,
+		ctx.Config.Storage.Upload.AllowedMIMEs,
 	)
 	uploadHandler := NewHandler(fileService, ctx.Logger)
 

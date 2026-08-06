@@ -6,31 +6,31 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/nekoimi/go-project-template/internal/model"
+	userdomain "github.com/nekoimi/go-project-template/internal/domain/user"
 	"github.com/nekoimi/go-project-template/internal/pkg/errcode"
 	"github.com/nekoimi/go-project-template/internal/pkg/idgen"
 	"github.com/nekoimi/go-project-template/internal/repository"
 )
 
 type stubUserRepo struct {
-	user *model.User
+	user *userdomain.User
 	err  error
 }
 
-func (s *stubUserRepo) Create(ctx context.Context, user *model.User) error { return nil }
+func (s *stubUserRepo) Create(ctx context.Context, user *userdomain.User) error { return nil }
 
-func (s *stubUserRepo) FindByID(ctx context.Context, id int64) (*model.User, error) {
+func (s *stubUserRepo) FindByID(ctx context.Context, id int64) (*userdomain.User, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
 	return s.user, nil
 }
 
-func (s *stubUserRepo) FindByEmail(ctx context.Context, email string) (*model.User, error) {
+func (s *stubUserRepo) FindByEmail(ctx context.Context, email string) (*userdomain.User, error) {
 	return nil, gorm.ErrRecordNotFound
 }
 
-func (s *stubUserRepo) FindByUsername(ctx context.Context, username string) (*model.User, error) {
+func (s *stubUserRepo) FindByUsername(ctx context.Context, username string) (*userdomain.User, error) {
 	return nil, gorm.ErrRecordNotFound
 }
 
@@ -41,7 +41,7 @@ func TestUserService_GetProfile_IDAsString(t *testing.T) {
 
 	id := int64(1234567890123456789)
 	repo := &stubUserRepo{
-		user: &model.User{
+		user: &userdomain.User{
 			ID:       id,
 			Username: "u",
 			Email:    "e@e.com",
@@ -61,7 +61,7 @@ func TestUserService_GetProfile_IDAsString(t *testing.T) {
 func TestUserService_GetProfile_InvalidIDUnauthorized(t *testing.T) {
 	t.Parallel()
 
-	svc := NewService(&stubUserRepo{user: &model.User{}})
+	svc := NewService(&stubUserRepo{user: &userdomain.User{}})
 	_, err := svc.GetProfile(context.Background(), "not-a-number")
 	app, ok := err.(*errcode.AppError)
 	if !ok || app.Code != errcode.Unauthorized {
