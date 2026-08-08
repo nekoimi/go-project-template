@@ -23,7 +23,9 @@
 ```
 ├── cmd/
 │   ├── server/main.go          # HTTP 服务入口
-│   └── scheduler/main.go       # 独立定时任务入口
+│   ├── scheduler/main.go       # 独立定时任务入口
+│   ├── migrate/main.go         # 内置数据库迁移命令
+│   └── tool/main.go            # 运维工具入口
 ├── config/                    # 配置文件
 ├── docs/                       # Swagger 文档
 ├── internal/
@@ -66,9 +68,35 @@ make dev-up    # 启动 PostgreSQL + MinIO
 make migrate-up
 ```
 
+也可以直接使用内置迁移命令：
+
+```bash
+go run ./cmd/migrate --config config/config.dev.yaml up
+go run ./cmd/migrate --config config/config.dev.yaml version
+go run ./cmd/migrate --config config/config.dev.yaml down 1
+```
+
+支持 `up`、`down`、`version`、`goto` 和 `force`。也可以通过
+`MIGRATE_DATABASE_URL` 或 `--database-url` 覆盖配置文件中的数据库连接。
+
+### 3. 使用运维工具创建用户
+
+模板当前没有角色/RBAC 字段，因此工具提供通用用户创建命令：
+
+```bash
+go run ./cmd/tool user create \
+  --config config/config.dev.yaml \
+  --username admin \
+  --email admin@example.com \
+  --password 'change-me-now'
+```
+
+也支持环境变量 `APP_CONFIG`、`APP_USER_USERNAME`、`APP_USER_EMAIL` 和
+`APP_USER_PASSWORD`。后续引入角色模型后，可在此命令基础上增加管理员提升命令。
+
 请**按文件名顺序执行全部迁移**（`migrations/` 下脚本可能包含破坏性变更，例如用户表结构重建）；不要只执行部分迁移以免与当前模型不一致。
 
-### 3. 启动服务
+### 4. 启动服务
 
 ```bash
 make run       # HTTP 服务 http://localhost:8080

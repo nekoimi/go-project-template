@@ -1,4 +1,4 @@
-.PHONY: run run-server run-scheduler build test lint swagger migrate-up migrate-down docker-build docker-up docker-down clean
+.PHONY: run run-server run-scheduler build test lint swagger migrate-up migrate-down tool-user-create docker-build docker-up docker-down clean
 
 # Run the server
 run: run-server
@@ -26,12 +26,15 @@ lint:
 swagger:
 	swag init -g cmd/server/main.go -o docs
 
-# Migrate (requires golang-migrate CLI)
+# Migrate (uses the project's embedded migrate command)
 migrate-up:
-	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/go_template?sslmode=disable" up
+	go run ./cmd/migrate --config config/config.dev.yaml up
 
 migrate-down:
-	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/go_template?sslmode=disable" down
+	go run ./cmd/migrate --config config/config.dev.yaml down
+
+tool-user-create:
+	go run ./cmd/tool user create --config config/config.dev.yaml --username "$${APP_USER_USERNAME}" --email "$${APP_USER_EMAIL}" --password "$${APP_USER_PASSWORD}"
 
 # Docker
 docker-build:
