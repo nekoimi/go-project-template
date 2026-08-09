@@ -1,4 +1,4 @@
-.PHONY: run run-server run-scheduler build test lint swagger migrate-up migrate-down tool-user-create docker-build docker-up docker-down clean
+.PHONY: run run-server run-scheduler run-worker build test lint swagger migrate-up migrate-down tool-user-create docker-build docker-up docker-down clean
 
 # Run the server
 run: run-server
@@ -9,10 +9,14 @@ run-server:
 run-scheduler:
 	go run cmd/scheduler/main.go --config config/config.dev.yaml
 
+run-worker:
+	go run cmd/worker/main.go --config config/config.dev.yaml
+
 # Build
 build:
 	go build -o bin/server cmd/server/main.go
 	go build -o bin/scheduler cmd/scheduler/main.go
+	go build -o bin/worker cmd/worker/main.go
 
 # Test
 test:
@@ -38,15 +42,15 @@ tool-user-create:
 
 # Docker
 docker-build:
-	docker compose -f deployments/docker-compose.yml build
+	docker compose --profile full build
 
 docker-up:
-	docker compose -f deployments/docker-compose.yml up -d
+	docker compose --profile full up -d
 
 docker-down:
-	docker compose -f deployments/docker-compose.yml down
+	docker compose down
 
-# Dev environment (PG + MinIO only)
+# Dev environment (PG + MinIO + Redis only)
 dev-up:
 	docker compose up -d
 

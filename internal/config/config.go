@@ -12,6 +12,7 @@ type Config struct {
 	Snowflake SnowflakeConfig `mapstructure:"snowflake"`
 	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
 	Scheduler SchedulerConfig `mapstructure:"scheduler"`
+	TaskQueue TaskQueueConfig `mapstructure:"task_queue"`
 	Websocket WebsocketConfig `mapstructure:"websocket"`
 	Storage   StorageConfig   `mapstructure:"storage"`
 	Modules   ModulesConfig   `mapstructure:"modules"`
@@ -76,6 +77,20 @@ type JWTConfig struct {
 type SchedulerConfig struct {
 	Enabled  bool   `mapstructure:"enabled"`
 	Timezone string `mapstructure:"timezone"`
+}
+
+type TaskQueueConfig struct {
+	Enabled         bool           `mapstructure:"enabled"`
+	Redis           RedisConfig    `mapstructure:"redis"`
+	Concurrency     int            `mapstructure:"concurrency"`
+	ShutdownTimeout time.Duration  `mapstructure:"shutdown_timeout"`
+	Queues          map[string]int `mapstructure:"queues"`
+}
+
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
 }
 
 type WebsocketConfig struct {

@@ -10,10 +10,6 @@ import (
 	_ "github.com/nekoimi/go-project-template/internal/modules/websocket"
 )
 
-func registeredModules() []framework.Module {
-	return framework.Modules(framework.ScopeHTTP, framework.ScopeScheduler)
-}
-
-func registeredSchedulerModules() []framework.Module {
-	return framework.Modules(framework.ScopeScheduler)
+func registeredModules(scopes ...framework.Scope) []framework.Module {
+	return framework.Modules(scopes...)
 }

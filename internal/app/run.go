@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os/signal"
@@ -9,10 +10,24 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/nekoimi/go-project-template/internal/framework"
 )
 
 func Run(configPath string) error {
-	a, cleanup, err := Initialize(configPath)
+	return run(configPath, framework.ScopeHTTP)
+}
+
+func RunScheduler(configPath string) error {
+	return run(configPath, framework.ScopeScheduler)
+}
+
+func RunWorker(configPath string) error {
+	return run(configPath, framework.ScopeWorker)
+}
+
+func run(configPath string, scopes ...framework.Scope) error {
+	a, cleanup, err := initialize(configPath, scopes...)
 	if err != nil {
 		return err
 	}
@@ -25,43 +40,12 @@ func Run(configPath string) error {
 		return err
 	}
 
-	if a.httpErr == nil {
-		<-ctx.Done()
-		return a.Stop(context.Background())
-	}
-
+	var runtimeErr error
 	select {
 	case <-ctx.Done():
-		return a.Stop(context.Background())
-	case err := <-a.httpErr:
-		if stopErr := a.Stop(context.Background()); stopErr != nil {
-			return stopErr
-		}
-		return err
+	case runtimeErr = <-a.runtimeErr:
 	}
-}
-
-func RunScheduler(configPath string) error {
-	a, cleanup, err := initialize(configPath, registeredSchedulerModules())
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	if a.Scheduler == nil {
-		a.Logger.Warn("scheduler is disabled")
-		<-ctx.Done()
-		return nil
-	}
-
-	a.Scheduler.Start()
-	<-ctx.Done()
-	a.Logger.Info("shutting down scheduler")
-	a.Scheduler.Stop()
-	return nil
+	return errors.Join(runtimeErr, a.Stop(context.Background()))
 }
 
 func (a *App) Start(ctx context.Context) error {
@@ -71,10 +55,16 @@ func (a *App) Start(ctx context.Context) error {
 	if err := a.Boot(ctx); err != nil {
 		return fmt.Errorf("boot app: %w", err)
 	}
+	if a.Worker != nil {
+		if err := a.Worker.Start(); err != nil {
+			startErr := fmt.Errorf("start task worker: %w", err)
+			return errors.Join(startErr, a.Shutdown(ctx))
+		}
+	}
 	if a.Scheduler != nil {
 		a.Scheduler.Start()
 	}
-	if a.Config.Server.Enabled {
+	if a.Engine != nil {
 		a.startHTTPServer()
 	}
 	return nil
@@ -84,48 +74,85 @@ func (a *App) Stop(ctx context.Context) error {
 	if a == nil {
 		return nil
 	}
-
 	a.Logger.Info("shutting down app")
+
 	timeout := time.Duration(a.Config.Server.ShutdownTimeout) * time.Second
+	if a.Config.TaskQueue.ShutdownTimeout > timeout {
+		timeout = a.Config.TaskQueue.ShutdownTimeout
+	}
 	if timeout <= 0 {
 		timeout = 10 * time.Second
 	}
-
 	shutdownCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var shutdownErr error
+	var errs []error
 	if a.HTTPServer != nil {
 		if err := a.HTTPServer.Shutdown(shutdownCtx); err != nil {
-			a.Logger.Error("http server shutdown error", zap.Error(err))
-			shutdownErr = err
+			errs = append(errs, fmt.Errorf("shutdown http server: %w", err))
 		}
 	}
 	if a.Scheduler != nil {
-		a.Scheduler.Stop()
-	}
-	if err := a.Shutdown(shutdownCtx); err != nil {
-		a.Logger.Error("app shutdown hook error", zap.Error(err))
-		if shutdownErr == nil {
-			shutdownErr = err
+		if err := a.Scheduler.Stop(shutdownCtx); err != nil {
+			errs = append(errs, fmt.Errorf("shutdown scheduler: %w", err))
 		}
 	}
-	a.Logger.Info("app stopped")
+	if a.Worker != nil {
+		if err := stopWithContext(shutdownCtx, a.Worker.Shutdown); err != nil {
+			errs = append(errs, fmt.Errorf("shutdown task worker: %w", err))
+		}
+	}
+	if err := a.Shutdown(shutdownCtx); err != nil {
+		errs = append(errs, fmt.Errorf("shutdown app modules: %w", err))
+	}
+
+	shutdownErr := errors.Join(errs...)
+	if shutdownErr != nil {
+		a.Logger.Error("app stopped with shutdown errors", zap.Error(shutdownErr))
+	} else {
+		a.Logger.Info("app stopped")
+	}
 	return shutdownErr
 }
 
+func stopWithContext(ctx context.Context, stop func()) error {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		stop()
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func (a *App) startHTTPServer() {
-	a.httpErr = make(chan error, 1)
 	a.HTTPServer = &http.Server{
-		Addr:    ":" + a.Config.Server.Port,
-		Handler: a.Engine,
+		Addr:              ":" + a.Config.Server.Port,
+		Handler:           a.Engine,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	go func() {
 		a.Logger.Info("http server starting", zap.String("addr", a.HTTPServer.Addr))
-		if err := a.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.Logger.Error("http server failed", zap.Error(err))
-			a.httpErr <- err
+		if err := a.HTTPServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			a.reportRuntimeError(fmt.Errorf("http server failed: %w", err))
 		}
 	}()
+}
+
+func (a *App) reportRuntimeError(err error) {
+	if err == nil {
+		return
+	}
+	a.Logger.Error("runtime failed", zap.Error(err))
+	select {
+	case a.runtimeErr <- err:
+	default:
+	}
 }

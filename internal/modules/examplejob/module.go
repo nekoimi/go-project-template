@@ -1,14 +1,11 @@
 package examplejob
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/nekoimi/go-project-template/internal/framework"
-	"github.com/nekoimi/go-project-template/internal/scheduler/jobs"
 )
 
 func init() {
-	framework.Register(NewModule(), framework.ScopeHTTP, framework.ScopeScheduler)
+	framework.Register(NewModule(), framework.ScopeScheduler, framework.ScopeWorker)
 }
 
 type Module struct{}
@@ -22,13 +19,22 @@ func (m *Module) Name() string {
 }
 
 func (m *Module) Register(ctx *framework.ModuleContext) error {
-	if !ctx.ModuleEnabled(m.Name()) || ctx.Scheduler == nil {
+	if !ctx.ModuleEnabled(m.Name()) {
 		return nil
 	}
 
-	if _, err := ctx.AddCronJob("0 */5 * * * *", jobs.NewExampleJob(ctx.Logger)); err != nil {
-		ctx.Logger.Error("failed to register example job", zap.Error(err))
-		return err
+	if ctx.Scheduler != nil {
+		if ctx.Queue == nil {
+			return ErrTaskQueueRequired
+		}
+		if _, err := ctx.AddCronJob("0 */5 * * * *", NewSchedulerJob(ctx.Queue, ctx.Logger)); err != nil {
+			return err
+		}
+	}
+	if ctx.Tasks != nil {
+		if err := ctx.Tasks.Handle(TaskTypeExample, NewTaskHandler(ctx.Logger)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

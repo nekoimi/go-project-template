@@ -65,11 +65,13 @@ func run(args []string, stdout, stderr io.Writer) (resultErr error) {
 		resultErr = errors.Join(resultErr, sourceErr, databaseErr)
 	}()
 
-	fmt.Fprintf(stdout, "migration path: %s\n", migrationPath)
+	if _, err := fmt.Fprintf(stdout, "migration path: %s\n", migrationPath); err != nil {
+		return fmt.Errorf("write migration path: %w", err)
+	}
 	if err := execute(m, command, commandArgs, stdout); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
-			fmt.Fprintln(stdout, "no migration changes")
-			return nil
+			_, writeErr := fmt.Fprintln(stdout, "no migration changes")
+			return writeErr
 		}
 		return err
 	}
@@ -84,7 +86,7 @@ func parseArgs(args []string, stderr io.Writer) (options, string, []string, erro
 	fs.StringVar(&opts.migrations, "path", "migrations", "migration SQL directory")
 	fs.StringVar(&opts.databaseURL, "database-url", "", "database URL (overrides config and MIGRATE_DATABASE_URL)")
 	fs.Usage = func() {
-		fmt.Fprint(stderr, usageText)
+		_, _ = fmt.Fprint(stderr, usageText)
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {
@@ -178,14 +180,14 @@ func execute(m *migrate.Migrate, command string, args []string, stdout io.Writer
 		}
 		version, dirty, err := m.Version()
 		if errors.Is(err, migrate.ErrNilVersion) {
-			fmt.Fprintln(stdout, "version: none (database is clean)")
-			return nil
+			_, writeErr := fmt.Fprintln(stdout, "version: none (database is clean)")
+			return writeErr
 		}
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "version: %d, dirty: %t\n", version, dirty)
-		return nil
+		_, writeErr := fmt.Fprintf(stdout, "version: %d, dirty: %t\n", version, dirty)
+		return writeErr
 	case "goto":
 		version, err := uintArg("goto", args)
 		if err != nil {

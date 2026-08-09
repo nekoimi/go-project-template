@@ -2,6 +2,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -14,19 +15,24 @@ type Shutdownable interface {
 }
 
 func BootModules(ctx context.Context, moduleCtx *ModuleContext, modules ...Module) error {
+	booted := make([]Module, 0, len(modules))
 	for _, module := range modules {
 		bootable, ok := module.(Bootable)
 		if !ok {
 			continue
 		}
 		if err := bootable.Boot(ctx, moduleCtx); err != nil {
-			return fmt.Errorf("boot module %s: %w", module.Name(), err)
+			bootErr := fmt.Errorf("boot module %s: %w", module.Name(), err)
+			rollbackErr := ShutdownModules(ctx, moduleCtx, booted...)
+			return errors.Join(bootErr, rollbackErr)
 		}
+		booted = append(booted, module)
 	}
 	return nil
 }
 
 func ShutdownModules(ctx context.Context, moduleCtx *ModuleContext, modules ...Module) error {
+	var errs []error
 	for i := len(modules) - 1; i >= 0; i-- {
 		module := modules[i]
 		shutdownable, ok := module.(Shutdownable)
@@ -34,8 +40,8 @@ func ShutdownModules(ctx context.Context, moduleCtx *ModuleContext, modules ...M
 			continue
 		}
 		if err := shutdownable.Shutdown(ctx, moduleCtx); err != nil {
-			return fmt.Errorf("shutdown module %s: %w", module.Name(), err)
+			errs = append(errs, fmt.Errorf("shutdown module %s: %w", module.Name(), err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }

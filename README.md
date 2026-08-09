@@ -14,6 +14,8 @@
 | [golang-jwt](https://github.com/golang-jwt/jwt) | JWT 认证 |
 | [gorilla/websocket](https://github.com/gorilla/websocket) | WebSocket |
 | [robfig/cron](https://github.com/robfig/cron) | 定时任务 |
+| [Asynq](https://github.com/hibiken/asynq) | Redis 后台任务队列 |
+| [Redis](https://redis.io/) | 任务队列存储 |
 | [snowflake](https://github.com/bwmarrin/snowflake) | 分布式 ID |
 | [gin-swagger](https://github.com/swaggo/gin-swagger) | API 文档 |
 | [MinIO](https://min.io/) | 对象存储 (可选) |
@@ -22,34 +24,38 @@
 
 ```
 ├── cmd/
-│   ├── server/main.go          # HTTP 服务入口
-│   ├── scheduler/main.go       # 独立定时任务入口
-│   ├── migrate/main.go         # 内置数据库迁移命令
-│   └── tool/main.go            # 运维工具入口
-├── config/                    # 配置文件
-├── docs/                       # Swagger 文档
+│   ├── server/                 # HTTP 服务入口
+│   ├── scheduler/              # cron 定时投递入口
+│   ├── worker/                 # Asynq 任务消费入口
+│   ├── migrate/                # 数据库迁移命令
+│   └── tool/                   # 运维工具入口
+├── config/                     # dev/test/prod 配置文件
+├── docs/                       # Swagger 文档与设计记录
 ├── internal/
-│   ├── app/                    # 应用初始化
-│   ├── config/                 # 配置结构与加载
-│   ├── dto/                    # 请求/响应 DTO
-│   ├── handler/
-│   │   ├── middleware/         # 中间件 (CORS, JWT, 限流, 日志, Recovery, RequestID)
-│   │   └── v1/                 # API Handler
-│   ├── infrastructure/         # 基础设施 (数据库, 日志)
-│   ├── model/                  # GORM 数据模型
-│   ├── pkg/
-│   │   ├── errcode/            # 业务错误码
-│   │   ├── response/           # 统一响应格式
-│   │   ├── snowflake/          # ID 生成器
-│   │   ├── idutil/             # 雪花 ID 字符串编解码 (API 边界)
-│   │   └── timeutil/           # 时区与时间类型
-│   ├── repository/             # 数据访问层
-│   ├── scheduler/              # 定时任务
-│   ├── service/                # 业务逻辑层
-│   ├── storage/                # 文件存储 (local / minio)
-│   └── websocket/              # WebSocket (Hub 模式)
-├── migrations/                 # 数据库迁移脚本
-├── docker-compose.yml          # 开发基础设施 (PG + MinIO)
+│   ├── app/                    # 各 runtime 的初始化、启动与关闭
+│   ├── config/                 # 配置模型、加载、校验与默认值
+│   ├── domain/user/            # 用户领域实体
+│   ├── framework/              # 模块注册、scope、生命周期、事件与健康检查
+│   ├── middleware/             # CORS、JWT、限流、日志、Recovery、RequestID
+│   ├── modules/                # 按业务能力组织的模块
+│   │   ├── auth/               # 注册、登录与认证事件
+│   │   ├── user/               # 用户资料
+│   │   ├── upload/             # 文件上传
+│   │   ├── websocket/          # WebSocket 模块注册
+│   │   └── examplejob/         # cron 投递与 Asynq Handler 示例
+│   ├── pkg/                    # 数据库、日志、错误码、响应、ID、JWT、时间工具
+│   ├── repository/             # GORM 数据访问层
+│   ├── scheduler/              # robfig/cron 调度器封装
+│   ├── storage/                # Local / S3 文件存储及工厂
+│   ├── taskqueue/              # Asynq Client、Worker 与通用任务协议
+│   ├── transport/              # 对外传输层
+│   │   ├── http/               # Gin 路由与 HTTP 基础端点
+│   │   └── grpc/               # gRPC transport 扩展位置
+│   └── websocket/              # WebSocket 连接与消息管理
+├── migrations/                 # PostgreSQL 迁移脚本
+├── scripts/                    # 模板模块名重命名脚本
+├── docker-compose.yml          # PG + MinIO + Redis + 应用进程
+├── Dockerfile                  # server/scheduler/worker 通用镜像构建
 ├── Makefile
 └── go.mod
 ```
@@ -59,7 +65,7 @@
 ### 1. 启动开发基础设施
 
 ```bash
-make dev-up    # 启动 PostgreSQL + MinIO
+make dev-up    # 启动 PostgreSQL + MinIO + Redis
 ```
 
 ### 2. 运行数据库迁移
@@ -106,7 +112,12 @@ make run       # HTTP 服务 http://localhost:8080
 
 ```bash
 make run-scheduler
+make run-worker
 ```
+
+生产运行时职责固定为：HTTP 服务处理请求，scheduler 到点后向 Redis 投递任务，worker 执行任务。HTTP 服务不会启动 cron，因此同时部署三个进程不会重复注册定时任务。
+
+Asynq 使用至少一次投递语义，任务处理器必须幂等。Payload 只应包含 ID 和小型参数；文件、长文本和模型上下文应存入 PostgreSQL 或对象存储，任务中只传引用。默认队列为 `critical`、`default` 和 `ai`，可以分别配置优先级与 worker 总并发数。
 
 ## 配置
 
@@ -122,6 +133,11 @@ make run-scheduler
 | `JWT_SECRET` | jwt.secret |
 | `TZ` | server.timezone |
 | `SNOWFLAKE_NODE_ID` | snowflake.node_id |
+| `TASK_QUEUE_ENABLED` | task_queue.enabled |
+| `TASK_QUEUE_CONCURRENCY` | task_queue.concurrency |
+| `REDIS_ADDR` | task_queue.redis.addr |
+| `REDIS_PASSWORD` | task_queue.redis.password |
+| `REDIS_DB` | task_queue.redis.db |
 | `S3_ACCESS_KEY` | storage.s3.access_key |
 | `S3_SECRET_KEY` | storage.s3.secret_key |
 | `S3_ENDPOINT` | storage.s3.endpoint |
@@ -150,7 +166,7 @@ make run-scheduler
 | 方法 | 路径 | 认证 | 说明 |
 |---|---|---|---|
 | GET | `/health` | - | 存活检查 |
-| GET | `/ready` | - | 就绪检查 (DB ping) |
+| GET | `/ready` | - | 就绪检查 (DB、Redis ping) |
 | POST | `/v1/auth/register` | - | 用户注册 |
 | POST | `/v1/auth/login` | - | 用户登录 |
 | GET | `/v1/users/profile` | JWT | 获取当前用户信息 |
@@ -180,7 +196,7 @@ make test          # 运行测试
 make lint          # golangci-lint（需已安装：go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest）
 
 make docker-build  # 构建 Docker 镜像
-make docker-up     # 启动完整部署 (app + scheduler + PG + MinIO)
+make docker-up     # 启动完整部署 (app + scheduler + worker + PG + MinIO + Redis)
 make docker-down   # 停止
 ```
 

@@ -22,6 +22,9 @@ scheduler:
   enabled: true
   timezone: "Asia/Shanghai"
 
+task_queue:
+  enabled: false
+
 modules:
   auth:
     enabled: true

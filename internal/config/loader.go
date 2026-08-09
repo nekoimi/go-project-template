@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -24,6 +26,11 @@ func Load(configPath string) (*Config, error) {
 	_ = v.BindEnv("jwt.secret", "JWT_SECRET")
 	_ = v.BindEnv("server.timezone", "TZ")
 	_ = v.BindEnv("snowflake.node_id", "SNOWFLAKE_NODE_ID")
+	_ = v.BindEnv("task_queue.enabled", "TASK_QUEUE_ENABLED")
+	_ = v.BindEnv("task_queue.redis.addr", "REDIS_ADDR")
+	_ = v.BindEnv("task_queue.redis.password", "REDIS_PASSWORD")
+	_ = v.BindEnv("task_queue.redis.db", "REDIS_DB")
+	_ = v.BindEnv("task_queue.concurrency", "TASK_QUEUE_CONCURRENCY")
 
 	_ = v.BindEnv("storage.minio.access_key", "MINIO_ACCESS_KEY")
 	_ = v.BindEnv("storage.minio.secret_key", "MINIO_SECRET_KEY")
@@ -51,6 +58,9 @@ func Load(configPath string) (*Config, error) {
 		return nil, err
 	}
 	cfg.Storage.Normalize()
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("validate config: %w", err)
+	}
 
 	return cfg, nil
 }
@@ -82,6 +92,20 @@ func DefaultConfig() *Config {
 		Scheduler: SchedulerConfig{
 			Enabled:  true,
 			Timezone: "Asia/Shanghai",
+		},
+		TaskQueue: TaskQueueConfig{
+			Enabled:         false,
+			Concurrency:     10,
+			ShutdownTimeout: 30 * time.Second,
+			Queues: map[string]int{
+				"critical": 6,
+				"default":  3,
+				"ai":       1,
+			},
+			Redis: RedisConfig{
+				Addr: "localhost:6379",
+				DB:   0,
+			},
 		},
 		Snowflake: SnowflakeConfig{
 			NodeID: 1,

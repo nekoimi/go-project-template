@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -27,8 +29,8 @@ func New(cfg config.SchedulerConfig, logger *zap.Logger, db *gorm.DB) *Scheduler
 		cron.WithSeconds(),
 		cron.WithLocation(location),
 		cron.WithChain(
-			cron.Recover(cron.DefaultLogger),
-			cron.SkipIfStillRunning(cron.DefaultLogger),
+			cron.Recover(zapCronLogger{logger: logger.Sugar()}),
+			cron.SkipIfStillRunning(zapCronLogger{logger: logger.Sugar()}),
 		),
 	)
 
@@ -48,9 +50,27 @@ func (s *Scheduler) Start() {
 	s.cron.Start()
 }
 
-func (s *Scheduler) Stop() {
+func (s *Scheduler) Stop(ctx context.Context) error {
 	s.logger.Info("scheduler stopping")
-	ctx := s.cron.Stop()
-	<-ctx.Done()
-	s.logger.Info("scheduler stopped")
+	jobsDone := s.cron.Stop()
+	select {
+	case <-jobsDone.Done():
+		s.logger.Info("scheduler stopped")
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+type zapCronLogger struct {
+	logger *zap.SugaredLogger
+}
+
+func (l zapCronLogger) Info(msg string, keysAndValues ...interface{}) {
+	l.logger.Infow(msg, keysAndValues...)
+}
+
+func (l zapCronLogger) Error(err error, msg string, keysAndValues ...interface{}) {
+	fields := append(keysAndValues, "error", fmt.Sprint(err))
+	l.logger.Errorw(msg, fields...)
 }

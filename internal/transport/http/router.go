@@ -1,4 +1,4 @@
-package handler
+package httptransport
 
 import (
 	"github.com/gin-gonic/gin"

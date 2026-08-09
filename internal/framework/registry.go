@@ -12,6 +12,7 @@ type Scope string
 const (
 	ScopeHTTP      Scope = "http"
 	ScopeScheduler Scope = "scheduler"
+	ScopeWorker    Scope = "worker"
 )
 
 type moduleEntry struct {

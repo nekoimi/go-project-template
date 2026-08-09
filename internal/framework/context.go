@@ -11,6 +11,7 @@ import (
 	"github.com/nekoimi/go-project-template/internal/config"
 	"github.com/nekoimi/go-project-template/internal/scheduler"
 	"github.com/nekoimi/go-project-template/internal/storage"
+	"github.com/nekoimi/go-project-template/internal/taskqueue"
 	ws "github.com/nekoimi/go-project-template/internal/websocket"
 )
 
@@ -32,6 +33,8 @@ type ModuleContext struct {
 	WSManager *ws.Manager
 	Health    *HealthRegistry
 	Events    *EventBus
+	Queue     taskqueue.Enqueuer
+	Tasks     taskqueue.HandlerRegistrar
 }
 
 func NewModuleContext(
@@ -44,6 +47,8 @@ func NewModuleContext(
 	wsManager *ws.Manager,
 	health *HealthRegistry,
 	events *EventBus,
+	queue taskqueue.Enqueuer,
+	tasks taskqueue.HandlerRegistrar,
 ) *ModuleContext {
 	var engine *gin.Engine
 	var api *gin.RouterGroup
@@ -66,6 +71,8 @@ func NewModuleContext(
 		WSManager: wsManager,
 		Health:    health,
 		Events:    events,
+		Queue:     queue,
+		Tasks:     tasks,
 	}
 }
 

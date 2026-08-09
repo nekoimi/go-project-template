@@ -9,12 +9,12 @@ goscaffold/
 │       └── main.go                  # 主入口（同时支持 HTTP + WebSocket）
 ├── internal/
 │   ├── config/                      # 配置（新增 websocket 配置）
-│   ├── handler/
-│   │   ├── v1/
+│   ├── transport/
+│   │   ├── http/
 │   │   │   ├── auth.go
 │   │   │   ├── user.go
 │   │   │   └── ws.go                # 新增：WebSocket 路由与升级处理
-│   │   └── middleware/
+│   │   └── grpc/
 │   ├── model/                       # 可复用现有模型
 │   ├── repository/
 │   ├── service/
@@ -116,12 +116,12 @@ goscaffold/
 │       └── main.go
 ├── internal/
 │   ├── config/                      # 配置新增 storage 段
-│   ├── handler/
-│   │   ├── v1/
+│   ├── transport/
+│   │   ├── http/
 │   │   │   ├── upload.go            # 新增：统一文件上传 Handler
 │   │   │   ├── auth.go
 │   │   │   └── user.go
-│   │   └── middleware/
+│   │   └── grpc/
 │   ├── storage/                     # 新增：文件存储核心（策略模式）
 │   │   ├── storage.go               # 接口定义 FileStorage
 │   │   ├── factory/                 # 工厂 + 根据配置自动选择驱动
@@ -244,4 +244,3 @@ services:
     volumes:
       - minio-data:/data
 ```
-

@@ -11,6 +11,7 @@ on:
         options:
           - server
           - scheduler
+          - worker
       image_tag:
         description: "Docker image tag for testing"
         required: true
@@ -80,6 +81,10 @@ jobs:
             scheduler)
               echo "build_target=cmd/scheduler" >> "${GITHUB_OUTPUT}"
               echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/go-template-scheduler" >> "${GITHUB_OUTPUT}"
+              ;;
+            worker)
+              echo "build_target=cmd/worker" >> "${GITHUB_OUTPUT}"
+              echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/go-template-worker" >> "${GITHUB_OUTPUT}"
               ;;
             *)
               echo "::error::Unsupported target: ${TARGET}"

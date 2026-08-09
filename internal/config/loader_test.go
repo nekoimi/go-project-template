@@ -162,3 +162,26 @@ storage:
 		t.Fatalf("Upload.MaxFileSize = %d, want legacy local value 10", cfg.Storage.Upload.MaxFileSize)
 	}
 }
+
+func TestLoad_ProjectConfigs(t *testing.T) {
+	t.Setenv("DATABASE_HOST", "postgres")
+	t.Setenv("DATABASE_PORT", "5432")
+	t.Setenv("DATABASE_USER", "postgres")
+	t.Setenv("DATABASE_PASSWORD", "postgres")
+	t.Setenv("DATABASE_NAME", "go_template")
+	t.Setenv("JWT_SECRET", "production-secret")
+	t.Setenv("S3_ACCESS_KEY", "access-key")
+	t.Setenv("S3_SECRET_KEY", "secret-key")
+	t.Setenv("REDIS_ADDR", "redis:6379")
+
+	paths := []string{
+		filepath.Join("..", "..", "config", "config.dev.yaml"),
+		filepath.Join("..", "..", "config", "config.test.yaml"),
+		filepath.Join("..", "..", "config", "config.prod.yaml"),
+	}
+	for _, path := range paths {
+		if _, err := Load(path); err != nil {
+			t.Errorf("Load(%q): %v", path, err)
+		}
+	}
+}
