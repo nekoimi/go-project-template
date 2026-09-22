@@ -55,7 +55,7 @@
 ├── migrations/                 # PostgreSQL 迁移脚本
 ├── scripts/                    # 模板模块名重命名脚本
 ├── docker-compose.yml          # PG + MinIO + Redis + 应用进程
-├── Dockerfile                  # server/scheduler/worker 通用镜像构建
+├── Dockerfile                  # 所有 cmd 命令的通用镜像构建
 ├── Makefile
 └── go.mod
 ```
@@ -199,6 +199,32 @@ make docker-build  # 构建 Docker 镜像
 make docker-up     # 启动完整部署 (app + scheduler + worker + PG + MinIO + Redis)
 make docker-down   # 停止
 ```
+
+Docker 容器支持在 `server` 启动前自动执行 `migrate up`，默认关闭；
+`scheduler`、`worker`、`migrate` 和 `tool` 不会触发自动迁移。使用
+Compose 时可通过环境变量开启：
+
+```bash
+AUTO_MIGRATE=true docker compose --profile full up -d
+```
+
+也可以在部署平台中为 `app` 容器设置 `AUTO_MIGRATE=true`。迁移失败时容器会
+直接退出，不会继续启动业务进程。`MIGRATE_CONFIG` 和 `MIGRATE_PATH` 可分别覆盖
+迁移使用的配置文件（默认 `config/config.prod.yaml`）和 SQL 目录（默认
+`migrations`）；数据库连接仍可通过 `MIGRATE_DATABASE_URL` 覆盖。多副本部署时，
+建议只为一个启动实例开启自动迁移，或在发布流程中使用独立迁移任务。
+
+同一个镜像包含 `server`、`scheduler`、`worker`、`migrate` 和 `tool` 五个命令，
+默认执行 `server`。例如：
+
+```bash
+docker compose --profile full run --rm app migrate --config config/config.prod.yaml version
+docker run --rm go-project-template:local tool --help
+docker compose --profile full run --rm worker
+```
+
+通过 Compose 启动时，`app`、`scheduler` 和 `worker` 也会复用
+`go-project-template:local` 这一个镜像。
 
 ## License
 

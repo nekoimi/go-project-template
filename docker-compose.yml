@@ -42,11 +42,10 @@ services:
 
   app:
     profiles: ["full"]
+    image: go-project-template:local
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        TARGET: cmd/server
     ports:
       - "8080:8080"
     depends_on:
@@ -57,6 +56,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      AUTO_MIGRATE: "${AUTO_MIGRATE:-false}"
       DATABASE_HOST: postgres
       DATABASE_PORT: "5432"
       DATABASE_USER: postgres
@@ -70,11 +70,8 @@ services:
 
   scheduler:
     profiles: ["full"]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        TARGET: cmd/scheduler
+    image: go-project-template:local
+    command: ["scheduler", "--config", "config/config.prod.yaml"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,11 +93,8 @@ services:
 
   worker:
     profiles: ["full"]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        TARGET: cmd/worker
+    image: go-project-template:local
+    command: ["worker", "--config", "config/config.prod.yaml"]
     depends_on:
       postgres:
         condition: service_healthy
