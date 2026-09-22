@@ -23,6 +23,9 @@
 ## 项目结构
 
 ```
+├── .github/
+│   ├── workflows/              # lint、单测、竞态、集成测试与镜像发布
+│   └── dependabot.yml          # Go 与 GitHub Actions 依赖更新
 ├── cmd/
 │   ├── server/                 # HTTP 服务入口
 │   ├── scheduler/              # cron 定时投递入口
@@ -33,8 +36,10 @@
 │   └── version/                # 构建版本信息
 ├── config/                     # dev/test/prod 配置文件
 ├── docs/                       # Swagger 文档与设计记录
+├── integration/                # PostgreSQL、Redis 集成测试
 ├── internal/
 │   ├── app/                    # 各 runtime 的初始化、启动与关闭
+│   ├── buildinfo/              # 版本、commit、构建时间
 │   ├── config/                 # 配置模型、加载、校验与默认值
 │   ├── domain/user/            # 用户领域实体
 │   ├── framework/              # 模块注册、scope、生命周期、事件与健康检查
@@ -54,12 +59,31 @@
 │   │   ├── http/               # Gin 路由与 HTTP 基础端点
 │   │   └── grpc/               # gRPC transport 扩展位置
 │   └── websocket/              # WebSocket 连接与消息管理
-├── migrations/                 # PostgreSQL 迁移脚本
-├── scripts/                    # 模板模块名重命名脚本
+├── migrations/                 # PostgreSQL 初始基线及后续迁移
+├── scripts/                    # Bash/PowerShell 模块路径重命名脚本
+├── .dockerignore               # Docker 构建上下文排除规则
+├── .gitattributes              # Shell 脚本 LF 换行规则
 ├── docker-compose.yml          # PG + MinIO + Redis + 应用进程
-├── Dockerfile                  # 所有 cmd 命令的通用镜像构建
-├── Makefile
-└── go.mod
+├── Dockerfile                  # 非 root、多命令通用镜像
+├── Makefile                    # 本地开发、构建和部署快捷命令
+└── go.mod                      # Go 模块与依赖
+```
+
+## 使用模板
+
+创建新项目后，先修改 Go module path。脚本会同步更新 `go.mod`、Go 源码 import
+以及 Dockerfile 中用于注入构建信息的包路径。
+
+Linux/macOS：
+
+```bash
+./scripts/rename-module.sh github.com/your-org/your-project
+```
+
+Windows PowerShell：
+
+```powershell
+.\scripts\rename-module.ps1 github.com/your-org/your-project
 ```
 
 ## 快速开始
@@ -67,7 +91,7 @@
 ### 1. 启动开发基础设施
 
 ```bash
-make dev-up    # 启动 PostgreSQL + MinIO + Redis
+make dev-up    # 仅启动 PostgreSQL + MinIO + Redis
 ```
 
 ### 2. 运行数据库迁移
@@ -228,6 +252,10 @@ make docker-up     # 启动完整部署 (app + scheduler + worker + PG + MinIO +
 make docker-down   # 停止
 ```
 
+不带 `full` profile 时，Compose 只启动 PostgreSQL、MinIO 和 Redis，适合本地运行
+Go 进程；`make docker-up` 会启用 `full` profile，同时启动 app、scheduler 和
+worker。应用容器提供 `/health` 健康检查，镜像使用非 root 用户运行。
+
 Docker 容器支持在 `server` 或 `all` 启动前自动执行 `migrate up`，默认关闭；
 `scheduler`、`worker`、`migrate` 和 `tool` 不会触发自动迁移。使用
 Compose 时可通过环境变量开启：
@@ -255,6 +283,35 @@ docker compose --profile full run --rm worker
 
 通过 Compose 启动时，`app`、`scheduler` 和 `worker` 也会复用
 `go-project-template:local` 这一个镜像。
+
+发布流水线会通过 ldflags 注入版本、commit 和构建时间，可用 `version` 查看：
+
+```text
+version=v1.2.3 commit=abc123 build_time=2026-09-22T12:00:00Z
+```
+
+## 测试与 CI
+
+本地单元测试和静态检查：
+
+```bash
+go test ./...
+go test -race ./...
+go vet ./...
+```
+
+集成测试需要 PostgreSQL 和 Redis。首次执行时创建独立测试数据库：
+
+```bash
+make dev-up
+docker compose exec postgres createdb -U postgres go_template_test
+go test -tags=integration -count=1 ./integration
+```
+
+默认连接 `localhost:5432/go_template_test` 和 `localhost:6379`，可分别通过
+`INTEGRATION_DATABASE_URL`、`INTEGRATION_REDIS_ADDR` 覆盖。CI 会自动启动依赖，
+验证 migration、数据库唯一约束、任务投递/消费/关闭、竞态检测、Docker 构建及
+镜像内各命令的 smoke test。
 
 ## License
 
