@@ -72,5 +72,23 @@ done < <(
     -type f -name '*.go' -print0
 )
 
+dockerfile="$project_root/Dockerfile"
+if [[ -f "$dockerfile" ]] && grep -Fq -- "$old_module" "$dockerfile"; then
+  temp_file="${dockerfile}.rename-module.$$"
+  awk -v old="$old_module" -v new="$new_module" '
+    function replace_all(text, position, result) {
+      result = ""
+      while ((position = index(text, old)) != 0) {
+        result = result substr(text, 1, position - 1) new
+        text = substr(text, position + length(old))
+      }
+      return result text
+    }
+    { print replace_all($0) }
+  ' "$dockerfile" > "$temp_file"
+  mv -- "$temp_file" "$dockerfile"
+  changed_files=$((changed_files + 1))
+fi
+
 printf 'Module path changed: %s -> %s\n' "$old_module" "$new_module"
-printf 'Updated %d Go file(s).\n' "$changed_files"
+printf 'Updated %d source file(s).\n' "$changed_files"

@@ -29,7 +29,8 @@
 │   ├── worker/                 # Asynq 任务消费入口
 │   ├── all/                    # HTTP + scheduler + worker 一体化入口
 │   ├── migrate/                # 数据库迁移命令
-│   └── tool/                   # 运维工具入口
+│   ├── tool/                   # 运维工具入口
+│   └── version/                # 构建版本信息
 ├── config/                     # dev/test/prod 配置文件
 ├── docs/                       # Swagger 文档与设计记录
 ├── internal/
@@ -101,7 +102,8 @@ go run ./cmd/tool user create \
 也支持环境变量 `APP_CONFIG`、`APP_USER_USERNAME`、`APP_USER_EMAIL` 和
 `APP_USER_PASSWORD`。后续引入角色模型后，可在此命令基础上增加管理员提升命令。
 
-请**按文件名顺序执行全部迁移**（`migrations/` 下脚本可能包含破坏性变更，例如用户表结构重建）；不要只执行部分迁移以免与当前模型不一致。
+当前模板从一份全新的 BIGINT 用户表基线迁移开始。复制模板创建新项目后，后续结构
+变更应继续追加新的迁移文件，不要修改已经在环境中执行过的迁移。
 
 ### 4. 启动服务
 
@@ -124,9 +126,11 @@ make run-all
 
 项目提供三种部署方式：`server` 仅运行 HTTP；`server`、`scheduler`、`worker`
 可拆分为独立进程；`all` 在一个进程中同时运行三者。拆分部署适合独立扩缩容，
-一体化模式适合本地开发和小规模单实例部署。不要同时启动 `all` 和独立的
-`scheduler`，否则可能重复调度任务；多副本运行 `all` 时也需要额外的 scheduler
-选主或分布式锁。
+一体化模式适合本地开发和小规模部署。scheduler 默认通过 Redis 进行 leader
+election，因此多个 `all` 或 scheduler 实例中只有 leader 会运行 cron；仍不建议
+在同一部署中混用 `all` 与独立 scheduler，以免增加不必要的运行复杂度。
+`scheduler.leader_ttl` 应大于 cron 回调本身的最长执行时间；cron 回调应只负责
+快速投递队列任务，耗时工作交给 worker。
 
 HTTP-only 模式不会创建任务队列客户端，也不会把 Redis 纳入 `/ready` 检查。
 `scheduler` 到点后向 Redis 投递任务，`worker` 负责消费任务。
@@ -144,11 +148,19 @@ Asynq 使用至少一次投递语义，任务处理器必须幂等。Payload 只
 | `DATABASE_USER` | database.user |
 | `DATABASE_PASSWORD` | database.password |
 | `DATABASE_NAME` | database.dbname |
+| `DATABASE_CONNECT_TIMEOUT` | database.connect_timeout |
 | `JWT_SECRET` | jwt.secret |
 | `TZ` | server.timezone |
+| `SERVER_READ_TIMEOUT` | server.read_timeout |
+| `SERVER_READ_HEADER_TIMEOUT` | server.read_header_timeout |
+| `SERVER_WRITE_TIMEOUT` | server.write_timeout |
+| `SERVER_IDLE_TIMEOUT` | server.idle_timeout |
 | `SNOWFLAKE_NODE_ID` | snowflake.node_id |
 | `TASK_QUEUE_ENABLED` | task_queue.enabled |
 | `TASK_QUEUE_CONCURRENCY` | task_queue.concurrency |
+| `SCHEDULER_LEADER_ELECTION` | scheduler.leader_election |
+| `SCHEDULER_LEADER_KEY` | scheduler.leader_key |
+| `SCHEDULER_LEADER_TTL` | scheduler.leader_ttl |
 | `REDIS_ADDR` | task_queue.redis.addr |
 | `REDIS_PASSWORD` | task_queue.redis.password |
 | `REDIS_DB` | task_queue.redis.db |
@@ -160,6 +172,8 @@ Asynq 使用至少一次投递语义，任务处理器必须幂等。Payload 只
 | `S3_REGION` | storage.s3.region |
 | `S3_USE_SSL` | storage.s3.use_ssl |
 | `S3_FORCE_PATH_STYLE` | storage.s3.force_path_style |
+| `S3_CREATE_BUCKET` | storage.s3.create_bucket |
+| `S3_STARTUP_TIMEOUT` | storage.s3.startup_timeout |
 
 生产使用的 `config/config.prod.yaml` 中等占位符（如 `${S3_ACCESS_KEY}`）不会被自动展开，需通过上表环境变量覆盖，或在 YAML 中直接写最终值。为平滑迁移，`MINIO_ACCESS_KEY`、`MINIO_SECRET_KEY`、`MINIO_ENDPOINT`、`MINIO_PUBLIC_URL`、`MINIO_BUCKET` 仍可作为对应 `S3_*` 环境变量的兼容别名。
 
@@ -180,7 +194,7 @@ Asynq 使用至少一次投递语义，任务处理器必须幂等。Payload 只
 | 方法 | 路径 | 认证 | 说明 |
 |---|---|---|---|
 | GET | `/health` | - | 存活检查 |
-| GET | `/ready` | - | 就绪检查 (DB、Redis ping) |
+| GET | `/ready` | - | 就绪检查（仅检查当前运行模式实际使用的依赖） |
 | POST | `/v1/auth/register` | - | 用户注册 |
 | POST | `/v1/auth/login` | - | 用户登录 |
 | GET | `/v1/users/profile` | JWT | 获取当前用户信息 |
@@ -193,7 +207,7 @@ Asynq 使用至少一次投递语义，任务处理器必须幂等。Payload 只
 ```json
 {
   "code": 0,
-  "message": "success",
+  "msg": "success",
   "data": {},
   "error": null
 }
@@ -228,13 +242,14 @@ AUTO_MIGRATE=true docker compose --profile full up -d
 `migrations`）；数据库连接仍可通过 `MIGRATE_DATABASE_URL` 覆盖。多副本部署时，
 建议只为一个启动实例开启自动迁移，或在发布流程中使用独立迁移任务。
 
-同一个镜像包含 `server`、`scheduler`、`worker`、`all`、`migrate` 和 `tool`
-六个命令，默认执行 `server`。例如：
+同一个镜像包含 `server`、`scheduler`、`worker`、`all`、`migrate`、`tool` 和
+`version` 七个命令，默认执行 `server`。例如：
 
 ```bash
 docker compose --profile full run --rm app migrate --config config/config.prod.yaml version
 docker run --rm go-project-template:local tool --help
 docker run --rm go-project-template:local all --config config/config.prod.yaml
+docker run --rm go-project-template:local version
 docker compose --profile full run --rm worker
 ```
 

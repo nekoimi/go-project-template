@@ -2,6 +2,11 @@ server:
   enabled: true
   port: "8080"
   mode: release
+  shutdown_timeout: 30
+  read_timeout: 2m
+  read_header_timeout: 10s
+  write_timeout: 2m
+  idle_timeout: 60s
   # CORS/WebSocket 允许的来源，空则允许全部（开发模式）
   # 生产环境应显式配置允许的域名列表
   allowed_origins:
@@ -18,6 +23,7 @@ database:
   max_open_conns: 50
   max_idle_conns: 20
   conn_max_lifetime: 60
+  connect_timeout: 10s
 
 jwt:
   secret: ${JWT_SECRET}
@@ -26,6 +32,9 @@ jwt:
 scheduler:
   enabled: true
   timezone: "Asia/Shanghai"
+  leader_election: true
+  leader_key: "go-project-template:scheduler:leader"
+  leader_ttl: 15s
 
 task_queue:
   enabled: true
@@ -66,6 +75,8 @@ storage:
   base_url: "https://your-domain.com"
   upload:
     max_file_size: 20
+    max_request_size: 100
+    max_files: 10
   local:
     upload_dir: "./uploads"
   s3:
@@ -78,3 +89,5 @@ storage:
     use_ssl: false
     force_path_style: true
     public_url: "https://minio.your-domain.com"
+    create_bucket: false
+    startup_timeout: 10s

@@ -21,6 +21,7 @@ build:
 	go build -o bin/scheduler cmd/scheduler/main.go
 	go build -o bin/worker cmd/worker/main.go
 	go build -o bin/all cmd/all/main.go
+	go build -o bin/version cmd/version/main.go
 
 # Test
 test:

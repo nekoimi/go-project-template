@@ -1,6 +1,8 @@
 package upload
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
@@ -8,12 +10,23 @@ import (
 )
 
 type Handler struct {
-	fileService Service
-	logger      *zap.Logger
+	fileService     Service
+	logger          *zap.Logger
+	maxRequestBytes int64
+	maxFiles        int
 }
 
-func NewHandler(fileService Service, logger *zap.Logger) *Handler {
-	return &Handler{fileService: fileService, logger: logger}
+func NewHandler(fileService Service, logger *zap.Logger, maxRequestSizeMB, maxFiles int) *Handler {
+	return &Handler{
+		fileService:     fileService,
+		logger:          logger,
+		maxRequestBytes: int64(maxRequestSizeMB) * 1024 * 1024,
+		maxFiles:        maxFiles,
+	}
+}
+
+func (h *Handler) limitRequestBody(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.maxRequestBytes)
 }
 
 // UploadSingle godoc
@@ -28,6 +41,7 @@ func NewHandler(fileService Service, logger *zap.Logger) *Handler {
 // @Failure      400    {object}  resp.JsonResponse
 // @Router       /upload/single [post]
 func (h *Handler) UploadSingle(c *gin.Context) (any, error) {
+	h.limitRequestBody(c)
 	file, err := c.FormFile("file")
 	if err != nil {
 		return nil, errcode.NewWithDetail(errcode.BadRequest, "missing file")
@@ -50,6 +64,7 @@ func (h *Handler) UploadSingle(c *gin.Context) (any, error) {
 // @Failure      400    {object}  resp.JsonResponse
 // @Router       /upload/multiple [post]
 func (h *Handler) UploadMultiple(c *gin.Context) (any, error) {
+	h.limitRequestBody(c)
 	form, err := c.MultipartForm()
 	if err != nil {
 		return nil, errcode.NewWithDetail(errcode.BadRequest, "invalid multipart form")
@@ -58,6 +73,9 @@ func (h *Handler) UploadMultiple(c *gin.Context) (any, error) {
 	files := form.File["files"]
 	if len(files) == 0 {
 		return nil, errcode.NewWithDetail(errcode.BadRequest, "no files provided")
+	}
+	if len(files) > h.maxFiles {
+		return nil, errcode.NewWithDetail(errcode.BadRequest, "too many files")
 	}
 
 	folder := c.DefaultPostForm("folder", "uploads")

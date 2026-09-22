@@ -64,7 +64,7 @@ func createUser(c *cli.Context) error {
 		return errors.New("password must be between 6 and 50 characters")
 	}
 
-	cfg, err := config.Load(c.String("config"))
+	cfg, err := config.LoadFor(c.String("config"), config.ValidationRequirements{Database: true})
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}

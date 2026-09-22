@@ -30,7 +30,12 @@ func (m *Module) Register(ctx *framework.ModuleContext) error {
 		ctx.Config.Storage.Upload.AllowedExts,
 		ctx.Config.Storage.Upload.AllowedMIMEs,
 	)
-	uploadHandler := NewHandler(fileService, ctx.Logger)
+	uploadHandler := NewHandler(
+		fileService,
+		ctx.Logger,
+		ctx.Config.Storage.Upload.MaxRequestSize,
+		ctx.Config.Storage.Upload.MaxFiles,
+	)
 
 	upload := ctx.Protected.Group("/upload")
 	upload.POST("/single", resp.Handle(uploadHandler.UploadSingle, ctx.Logger))

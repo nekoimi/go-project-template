@@ -107,7 +107,7 @@ func resolveDatabaseURL(opts options) (string, error) {
 	if value := strings.TrimSpace(os.Getenv("MIGRATE_DATABASE_URL")); value != "" {
 		return value, nil
 	}
-	cfg, err := config.Load(opts.configPath)
+	cfg, err := config.LoadFor(opts.configPath, config.ValidationRequirements{Database: true})
 	if err != nil {
 		return "", fmt.Errorf("load config %q: %w", opts.configPath, err)
 	}

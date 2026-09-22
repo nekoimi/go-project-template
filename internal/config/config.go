@@ -49,24 +49,29 @@ type RateLimitConfig struct {
 }
 
 type ServerConfig struct {
-	Enabled         bool     `mapstructure:"enabled"`
-	Port            string   `mapstructure:"port"`
-	Mode            string   `mapstructure:"mode"` // debug / release
-	Timezone        string   `mapstructure:"timezone"`
-	ShutdownTimeout int      `mapstructure:"shutdown_timeout"` // 秒
-	AllowedOrigins  []string `mapstructure:"allowed_origins"`  // CORS/WebSocket 允许的来源，空则允许全部
+	Enabled           bool          `mapstructure:"enabled"`
+	Port              string        `mapstructure:"port"`
+	Mode              string        `mapstructure:"mode"` // debug / release
+	Timezone          string        `mapstructure:"timezone"`
+	ShutdownTimeout   int           `mapstructure:"shutdown_timeout"` // 秒
+	ReadTimeout       time.Duration `mapstructure:"read_timeout"`
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
+	WriteTimeout      time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
+	AllowedOrigins    []string      `mapstructure:"allowed_origins"` // CORS/WebSocket 允许的来源，空则允许全部
 }
 
 type DatabaseConfig struct {
-	Host            string `mapstructure:"host"`
-	Port            string `mapstructure:"port"`
-	User            string `mapstructure:"user"`
-	Password        string `mapstructure:"password"`
-	DBName          string `mapstructure:"dbname"`
-	SSLMode         string `mapstructure:"sslmode"`
-	MaxOpenConns    int    `mapstructure:"max_open_conns"`
-	MaxIdleConns    int    `mapstructure:"max_idle_conns"`
-	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"` // 分钟
+	Host            string        `mapstructure:"host"`
+	Port            string        `mapstructure:"port"`
+	User            string        `mapstructure:"user"`
+	Password        string        `mapstructure:"password"`
+	DBName          string        `mapstructure:"dbname"`
+	SSLMode         string        `mapstructure:"sslmode"`
+	MaxOpenConns    int           `mapstructure:"max_open_conns"`
+	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime int           `mapstructure:"conn_max_lifetime"` // 分钟
+	ConnectTimeout  time.Duration `mapstructure:"connect_timeout"`
 }
 
 type JWTConfig struct {
@@ -75,8 +80,11 @@ type JWTConfig struct {
 }
 
 type SchedulerConfig struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	Timezone string `mapstructure:"timezone"`
+	Enabled        bool          `mapstructure:"enabled"`
+	Timezone       string        `mapstructure:"timezone"`
+	LeaderElection bool          `mapstructure:"leader_election"`
+	LeaderKey      string        `mapstructure:"leader_key"`
+	LeaderTTL      time.Duration `mapstructure:"leader_ttl"`
 }
 
 type TaskQueueConfig struct {
@@ -124,21 +132,25 @@ type LocalConfig struct {
 }
 
 type UploadConfig struct {
-	MaxFileSize  int      `mapstructure:"max_file_size"` // MB
-	AllowedExts  []string `mapstructure:"allowed_exts"`
-	AllowedMIMEs []string `mapstructure:"allowed_mimes"`
+	MaxFileSize    int      `mapstructure:"max_file_size"`    // MB
+	MaxRequestSize int      `mapstructure:"max_request_size"` // MB
+	MaxFiles       int      `mapstructure:"max_files"`
+	AllowedExts    []string `mapstructure:"allowed_exts"`
+	AllowedMIMEs   []string `mapstructure:"allowed_mimes"`
 }
 
 type S3Config struct {
-	Provider       string `mapstructure:"provider"` // minio / rustfs / aws
-	Endpoint       string `mapstructure:"endpoint"`
-	AccessKey      string `mapstructure:"access_key"`
-	SecretKey      string `mapstructure:"secret_key"`
-	Bucket         string `mapstructure:"bucket"`
-	Region         string `mapstructure:"region"`
-	UseSSL         bool   `mapstructure:"use_ssl"`
-	ForcePathStyle bool   `mapstructure:"force_path_style"`
-	PublicURL      string `mapstructure:"public_url"`
+	Provider       string        `mapstructure:"provider"` // minio / rustfs / aws
+	Endpoint       string        `mapstructure:"endpoint"`
+	AccessKey      string        `mapstructure:"access_key"`
+	SecretKey      string        `mapstructure:"secret_key"`
+	Bucket         string        `mapstructure:"bucket"`
+	Region         string        `mapstructure:"region"`
+	UseSSL         bool          `mapstructure:"use_ssl"`
+	ForcePathStyle bool          `mapstructure:"force_path_style"`
+	PublicURL      string        `mapstructure:"public_url"`
+	CreateBucket   bool          `mapstructure:"create_bucket"`
+	StartupTimeout time.Duration `mapstructure:"startup_timeout"`
 }
 
 // Normalize converts legacy storage settings to the protocol-oriented S3

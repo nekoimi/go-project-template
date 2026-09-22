@@ -2,6 +2,11 @@ server:
   enabled: true
   port: "8081"
   mode: debug
+  shutdown_timeout: 10
+  read_timeout: 2m
+  read_header_timeout: 10s
+  write_timeout: 2m
+  idle_timeout: 60s
 
 database:
   host: localhost
@@ -13,6 +18,7 @@ database:
   max_open_conns: 10
   max_idle_conns: 5
   conn_max_lifetime: 10
+  connect_timeout: 5s
 
 jwt:
   secret: "test-secret"
@@ -21,6 +27,9 @@ jwt:
 scheduler:
   enabled: true
   timezone: "Asia/Shanghai"
+  leader_election: true
+  leader_key: "go-project-template:scheduler:leader"
+  leader_ttl: 15s
 
 task_queue:
   enabled: false
@@ -51,6 +60,8 @@ storage:
   base_url: "http://localhost:8081/uploads"
   upload:
     max_file_size: 5
+    max_request_size: 20
+    max_files: 5
   local:
     upload_dir: "./test-uploads"
   s3:
@@ -63,3 +74,5 @@ storage:
     use_ssl: false
     force_path_style: true
     public_url: "http://localhost:9000"
+    create_bucket: true
+    startup_timeout: 5s

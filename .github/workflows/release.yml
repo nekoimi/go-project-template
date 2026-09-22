@@ -69,65 +69,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata (server)
-        id: meta-server
+      - name: Docker metadata
+        id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/go-template-server
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/go-project-template
           tags: |
             type=semver,pattern={{version}},value=${{ steps.release-context.outputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.release-context.outputs.tag }}
             type=raw,value=latest
 
-      - name: Docker metadata (scheduler)
-        id: meta-scheduler
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/go-template-scheduler
-          tags: |
-            type=semver,pattern={{version}},value=${{ steps.release-context.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release-context.outputs.tag }}
-            type=raw,value=latest
-
-      - name: Docker metadata (worker)
-        id: meta-worker
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/go-template-worker
-          tags: |
-            type=semver,pattern={{version}},value=${{ steps.release-context.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release-context.outputs.tag }}
-            type=raw,value=latest
-
-      - name: Build and push server
+      - name: Build and push image
         uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
-          build-args: TARGET=cmd/server
+          build-args: |
+            VERSION=${{ steps.release-context.outputs.tag }}
+            COMMIT=${{ github.sha }}
+            BUILD_TIME=${{ github.event.repository.updated_at }}
           push: true
-          tags: ${{ steps.meta-server.outputs.tags }}
-          labels: ${{ steps.meta-server.outputs.labels }}
-
-      - name: Build and push scheduler
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile
-          build-args: TARGET=cmd/scheduler
-          push: true
-          tags: ${{ steps.meta-scheduler.outputs.tags }}
-          labels: ${{ steps.meta-scheduler.outputs.labels }}
-
-      - name: Build and push worker
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile
-          build-args: TARGET=cmd/worker
-          push: true
-          tags: ${{ steps.meta-worker.outputs.tags }}
-          labels: ${{ steps.meta-worker.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

@@ -3,15 +3,6 @@ name: Test Image
 on:
   workflow_dispatch:
     inputs:
-      target:
-        description: "Image target to build"
-        required: true
-        default: server
-        type: choice
-        options:
-          - server
-          - scheduler
-          - worker
       image_tag:
         description: "Docker image tag for testing"
         required: true
@@ -30,7 +21,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.inputs.target }}-${{ github.event.inputs.image_tag }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.image_tag }}
   cancel-in-progress: true
 
 jobs:
@@ -64,7 +55,6 @@ jobs:
         id: image
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
-          TARGET: ${{ inputs.target }}
         run: |
           set -euo pipefail
 
@@ -73,25 +63,8 @@ jobs:
             exit 1
           fi
 
-          case "${TARGET}" in
-            server)
-              echo "build_target=cmd/server" >> "${GITHUB_OUTPUT}"
-              echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/go-template-server" >> "${GITHUB_OUTPUT}"
-              ;;
-            scheduler)
-              echo "build_target=cmd/scheduler" >> "${GITHUB_OUTPUT}"
-              echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/go-template-scheduler" >> "${GITHUB_OUTPUT}"
-              ;;
-            worker)
-              echo "build_target=cmd/worker" >> "${GITHUB_OUTPUT}"
-              echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/go-template-worker" >> "${GITHUB_OUTPUT}"
-              ;;
-            *)
-              echo "::error::Unsupported target: ${TARGET}"
-              exit 1
-              ;;
-          esac
 
+          echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/go-project-template" >> "${GITHUB_OUTPUT}"
           echo "tag=${IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
 
       - name: Build and push test image
@@ -99,7 +72,6 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          build-args: TARGET=${{ steps.image.outputs.build_target }}
           push: true
           tags: |
             ${{ steps.image.outputs.image }}:${{ steps.image.outputs.tag }}

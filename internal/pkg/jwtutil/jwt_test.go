@@ -68,3 +68,30 @@ func TestValidateToken_invalidSub(t *testing.T) {
 		t.Fatal("expected error for non-string sub")
 	}
 }
+
+func TestValidateToken_rejectsWrongAlgorithm(t *testing.T) {
+	secret := "test-secret"
+	tok, err := jwt.NewWithClaims(jwt.SigningMethodHS384, jwt.MapClaims{
+		"sub": "42",
+		"exp": time.Now().Add(time.Hour).Unix(),
+	}).SignedString([]byte(secret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ValidateToken(tok, secret); err == nil {
+		t.Fatal("expected error for non-HS256 token")
+	}
+}
+
+func TestValidateToken_requiresExpiration(t *testing.T) {
+	secret := "test-secret"
+	tok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": "42",
+	}).SignedString([]byte(secret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ValidateToken(tok, secret); err == nil {
+		t.Fatal("expected error for token without expiration")
+	}
+}

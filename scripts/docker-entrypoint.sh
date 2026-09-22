@@ -33,12 +33,12 @@ case "$command" in
     run_migrations
     exec "/app/bin/${command}" "$@"
     ;;
-  scheduler|worker|migrate|tool)
+  scheduler|worker|migrate|tool|version)
     exec "/app/bin/${command}" "$@"
     ;;
   *)
     echo "Unknown command: ${command}" >&2
-    echo "Available commands: server, scheduler, worker, all, migrate, tool" >&2
+    echo "Available commands: server, scheduler, worker, all, migrate, tool, version" >&2
     exit 2
     ;;
 esac

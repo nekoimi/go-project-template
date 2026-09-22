@@ -1,7 +1,11 @@
 package database
 
 import (
+	"context"
 	"fmt"
+	"net"
+	"net/url"
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -13,10 +17,19 @@ import (
 )
 
 func NewPostgresDB(cfg config.DatabaseConfig, log *zap.Logger, serverMode string) (*gorm.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode,
-	)
+	query := url.Values{}
+	query.Set("sslmode", cfg.SSLMode)
+	if cfg.ConnectTimeout > 0 {
+		seconds := max(1, int(cfg.ConnectTimeout/time.Second))
+		query.Set("connect_timeout", strconv.Itoa(seconds))
+	}
+	dsn := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(cfg.User, cfg.Password),
+		Host:     net.JoinHostPort(cfg.Host, cfg.Port),
+		Path:     "/" + cfg.DBName,
+		RawQuery: query.Encode(),
+	}).String()
 
 	var gormLogLevel logger.LogLevel
 	switch serverMode {
@@ -52,7 +65,13 @@ func NewPostgresDB(cfg config.DatabaseConfig, log *zap.Logger, serverMode string
 	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Minute)
 
-	if err := sqlDB.Ping(); err != nil {
+	pingTimeout := cfg.ConnectTimeout
+	if pingTimeout <= 0 {
+		pingTimeout = 10 * time.Second
+	}
+	pingCtx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	defer cancel()
+	if err := sqlDB.PingContext(pingCtx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 

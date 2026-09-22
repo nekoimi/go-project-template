@@ -23,7 +23,7 @@ type Storage struct {
 	publicURL string
 }
 
-func New(cfg config.S3Config) (storage.FileStorage, error) {
+func New(parent context.Context, cfg config.S3Config) (storage.FileStorage, error) {
 	lookup := minioClient.BucketLookupAuto
 	if cfg.ForcePathStyle {
 		lookup = minioClient.BucketLookupPath
@@ -39,12 +39,16 @@ func New(cfg config.S3Config) (storage.FileStorage, error) {
 		return nil, fmt.Errorf("failed to create S3 client: %w", err)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(parent, cfg.StartupTimeout)
+	defer cancel()
 	exists, err := client.BucketExists(ctx, cfg.Bucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check S3 bucket: %w", err)
 	}
 	if !exists {
+		if !cfg.CreateBucket {
+			return nil, fmt.Errorf("S3 bucket %q does not exist and automatic creation is disabled", cfg.Bucket)
+		}
 		if err := client.MakeBucket(ctx, cfg.Bucket, minioClient.MakeBucketOptions{Region: cfg.Region}); err != nil {
 			return nil, fmt.Errorf("failed to create S3 bucket: %w", err)
 		}

@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -14,14 +15,14 @@ import (
 // subpackage because concrete drivers depend on the storage contracts package,
 // and importing them from the root storage package would create an import
 // cycle.
-func New(cfg config.StorageConfig) (storage.FileStorage, error) {
+func New(ctx context.Context, cfg config.StorageConfig) (storage.FileStorage, error) {
 	cfg.Normalize()
 
 	switch strings.ToLower(cfg.Driver) {
 	case "local":
 		return local.New(cfg), nil
 	case "s3":
-		return s3.New(cfg.S3)
+		return s3.New(ctx, cfg.S3)
 	default:
 		return nil, fmt.Errorf("unsupported storage driver %q", cfg.Driver)
 	}

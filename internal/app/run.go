@@ -75,7 +75,10 @@ func (a *App) Start(ctx context.Context) error {
 		}
 	}
 	if a.Scheduler != nil {
-		a.Scheduler.Start()
+		if err := a.Scheduler.Start(ctx); err != nil {
+			startErr := fmt.Errorf("start scheduler: %w", err)
+			return errors.Join(startErr, a.Shutdown(ctx))
+		}
 	}
 	if a.Engine != nil {
 		a.startHTTPServer()
@@ -146,8 +149,10 @@ func (a *App) startHTTPServer() {
 	a.HTTPServer = &http.Server{
 		Addr:              ":" + a.Config.Server.Port,
 		Handler:           a.Engine,
-		ReadHeaderTimeout: 10 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadTimeout:       a.Config.Server.ReadTimeout,
+		ReadHeaderTimeout: a.Config.Server.ReadHeaderTimeout,
+		WriteTimeout:      a.Config.Server.WriteTimeout,
+		IdleTimeout:       a.Config.Server.IdleTimeout,
 		MaxHeaderBytes:    1 << 20,
 	}
 

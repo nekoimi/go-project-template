@@ -1,20 +1,21 @@
 package factory
 
 import (
+	"context"
 	"testing"
 
 	"github.com/nekoimi/go-project-template/internal/config"
 )
 
 func TestNewRejectsUnsupportedDriver(t *testing.T) {
-	_, err := New(config.StorageConfig{Driver: "unknown"})
+	_, err := New(context.Background(), config.StorageConfig{Driver: "unknown"})
 	if err == nil {
 		t.Fatal("expected unsupported driver error")
 	}
 }
 
 func TestNewCreatesLocalStorage(t *testing.T) {
-	got, err := New(config.StorageConfig{
+	got, err := New(context.Background(), config.StorageConfig{
 		Driver:  "local",
 		BaseURL: "http://localhost/uploads",
 		Local: config.LocalConfig{

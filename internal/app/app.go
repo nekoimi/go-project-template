@@ -60,7 +60,14 @@ func Initialize(configPath string) (*App, func(), error) {
 }
 
 func initialize(configPath string, scopes ...framework.Scope) (*App, func(), error) {
-	cfg, err := config.Load(configPath)
+	requirements := config.ValidationRequirements{
+		HTTP:      hasScope(scopes, framework.ScopeHTTP),
+		Scheduler: hasScope(scopes, framework.ScopeScheduler),
+		Worker:    hasScope(scopes, framework.ScopeWorker),
+		Database:  hasScope(scopes, framework.ScopeHTTP),
+		Storage:   hasScope(scopes, framework.ScopeHTTP),
+	}
+	cfg, err := config.LoadFor(configPath, requirements)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load config: %w", err)
 	}
@@ -105,23 +112,30 @@ func initialize(configPath string, scopes ...framework.Scope) (*App, func(), err
 		return nil, nil, err
 	}
 
-	db, err = database.NewPostgresDB(cfg.Database, log, cfg.Server.Mode)
-	if err != nil {
-		return fail(fmt.Errorf("failed to connect database: %w", err))
+	if requirements.Database {
+		db, err = database.NewPostgresDB(cfg.Database, log, cfg.Server.Mode)
+		if err != nil {
+			return fail(fmt.Errorf("failed to connect database: %w", err))
+		}
 	}
-	fileStorage, err := storagefactory.New(cfg.Storage)
-	if err != nil {
-		return fail(fmt.Errorf("failed to create storage: %w", err))
+	var fileStorage storage.FileStorage
+	if requirements.Storage {
+		fileStorage, err = storagefactory.New(context.Background(), cfg.Storage)
+		if err != nil {
+			return fail(fmt.Errorf("failed to create storage: %w", err))
+		}
 	}
 
 	health := framework.NewHealthRegistry()
-	health.Register("database", func(ctx context.Context) error {
-		sqlDB, dbErr := db.DB()
-		if dbErr != nil {
-			return dbErr
-		}
-		return sqlDB.PingContext(ctx)
-	})
+	if db != nil {
+		health.Register("database", func(ctx context.Context) error {
+			sqlDB, dbErr := db.DB()
+			if dbErr != nil {
+				return dbErr
+			}
+			return sqlDB.PingContext(ctx)
+		})
+	}
 	if cfg.TaskQueue.Enabled && requiresTaskQueue(scopes...) {
 		queueClient = taskqueue.NewClient(cfg.TaskQueue.Redis)
 		health.Register("redis", queueClient.Ping)
@@ -129,7 +143,7 @@ func initialize(configPath string, scopes ...framework.Scope) (*App, func(), err
 
 	var sched *scheduler.Scheduler
 	if hasScope(scopes, framework.ScopeScheduler) {
-		sched = scheduler.New(cfg.Scheduler, log, db)
+		sched = scheduler.New(cfg.Scheduler, log, queueClient)
 	}
 	var worker *taskqueue.Worker
 	if hasScope(scopes, framework.ScopeWorker) {

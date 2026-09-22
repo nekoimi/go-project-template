@@ -61,5 +61,15 @@ Get-ChildItem -LiteralPath $projectRoot -Recurse -File -Filter '*.go' |
         $changedFiles++
     }
 
+$dockerfilePath = Join-Path $projectRoot 'Dockerfile'
+if (Test-Path -LiteralPath $dockerfilePath -PathType Leaf) {
+    $content = [System.IO.File]::ReadAllText($dockerfilePath)
+    if ($content.Contains($oldModule)) {
+        $updatedContent = $content.Replace($oldModule, $NewModule)
+        [System.IO.File]::WriteAllText($dockerfilePath, $updatedContent, $utf8WithoutBom)
+        $changedFiles++
+    }
+}
+
 Write-Host "Module path changed: $oldModule -> $NewModule"
-Write-Host "Updated $changedFiles Go file(s)."
+Write-Host "Updated $changedFiles source file(s)."

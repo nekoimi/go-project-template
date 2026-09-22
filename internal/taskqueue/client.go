@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
@@ -67,6 +68,38 @@ func (c *Client) Ping(ctx context.Context) error {
 		return fmt.Errorf("ping redis: %w", err)
 	}
 	return nil
+}
+
+func (c *Client) AcquireLeadership(ctx context.Context, key, owner string, ttl time.Duration) (bool, error) {
+	if c == nil || c.redis == nil {
+		return false, fmt.Errorf("task queue client is not initialized")
+	}
+	return c.redis.SetNX(ctx, key, owner, ttl).Result()
+}
+
+func (c *Client) RenewLeadership(ctx context.Context, key, owner string, ttl time.Duration) (bool, error) {
+	if c == nil || c.redis == nil {
+		return false, fmt.Errorf("task queue client is not initialized")
+	}
+	const script = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+end
+return 0`
+	result, err := c.redis.Eval(ctx, script, []string{key}, owner, ttl.Milliseconds()).Int64()
+	return result == 1, err
+}
+
+func (c *Client) ReleaseLeadership(ctx context.Context, key, owner string) error {
+	if c == nil || c.redis == nil {
+		return nil
+	}
+	const script = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+end
+return 0`
+	return c.redis.Eval(ctx, script, []string{key}, owner).Err()
 }
 
 func (c *Client) Close() error {
