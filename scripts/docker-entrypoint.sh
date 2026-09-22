@@ -29,16 +29,16 @@ command="$1"
 shift
 
 case "$command" in
-  server)
+  server|all)
     run_migrations
-    exec /app/bin/server "$@"
+    exec "/app/bin/${command}" "$@"
     ;;
   scheduler|worker|migrate|tool)
     exec "/app/bin/${command}" "$@"
     ;;
   *)
     echo "Unknown command: ${command}" >&2
-    echo "Available commands: server, scheduler, worker, migrate, tool" >&2
+    echo "Available commands: server, scheduler, worker, all, migrate, tool" >&2
     exit 2
     ;;
 esac

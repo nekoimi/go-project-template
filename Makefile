@@ -1,4 +1,4 @@
-.PHONY: run run-server run-scheduler run-worker build test lint swagger migrate-up migrate-down tool-user-create docker-build docker-up docker-down clean
+.PHONY: run run-server run-scheduler run-worker run-all build test lint swagger migrate-up migrate-down tool-user-create docker-build docker-up docker-down clean
 
 # Run the server
 run: run-server
@@ -12,11 +12,15 @@ run-scheduler:
 run-worker:
 	go run cmd/worker/main.go --config config/config.dev.yaml
 
+run-all:
+	go run cmd/all/main.go --config config/config.dev.yaml
+
 # Build
 build:
 	go build -o bin/server cmd/server/main.go
 	go build -o bin/scheduler cmd/scheduler/main.go
 	go build -o bin/worker cmd/worker/main.go
+	go build -o bin/all cmd/all/main.go
 
 # Test
 test:

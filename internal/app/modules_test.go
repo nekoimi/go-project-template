@@ -13,6 +13,11 @@ func TestRuntimeScopesDoNotOverlap(t *testing.T) {
 	assertModuleNames(t, registeredModules(framework.ScopeHTTP), []string{"auth", "upload", "user", "websocket"})
 	assertModuleNames(t, registeredModules(framework.ScopeScheduler), []string{"example_job"})
 	assertModuleNames(t, registeredModules(framework.ScopeWorker), []string{"example_job"})
+	assertModuleNames(t, registeredModules(
+		framework.ScopeHTTP,
+		framework.ScopeScheduler,
+		framework.ScopeWorker,
+	), []string{"auth", "example_job", "upload", "user", "websocket"})
 }
 
 func TestValidateRuntimeRequiresTaskQueue(t *testing.T) {
@@ -28,6 +33,26 @@ func TestValidateRuntimeRequiresTaskQueue(t *testing.T) {
 	}
 	if err := validateRuntime(cfg, framework.ScopeWorker); err == nil {
 		t.Fatal("worker runtime accepted disabled task queue")
+	}
+	if err := validateRuntime(cfg, framework.ScopeHTTP, framework.ScopeScheduler, framework.ScopeWorker); err == nil {
+		t.Fatal("all runtime accepted disabled task queue")
+	}
+}
+
+func TestRuntimeTaskQueueRequirement(t *testing.T) {
+	t.Parallel()
+
+	if requiresTaskQueue(framework.ScopeHTTP) {
+		t.Fatal("HTTP-only runtime unexpectedly requires task queue resources")
+	}
+	if !requiresTaskQueue(framework.ScopeScheduler) {
+		t.Fatal("scheduler runtime does not require task queue resources")
+	}
+	if !requiresTaskQueue(framework.ScopeWorker) {
+		t.Fatal("worker runtime does not require task queue resources")
+	}
+	if !requiresTaskQueue(framework.ScopeHTTP, framework.ScopeScheduler, framework.ScopeWorker) {
+		t.Fatal("all runtime does not require task queue resources")
 	}
 }
 

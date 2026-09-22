@@ -15,6 +15,10 @@ import (
 )
 
 func Run(configPath string) error {
+	return RunHTTP(configPath)
+}
+
+func RunHTTP(configPath string) error {
 	return run(configPath, framework.ScopeHTTP)
 }
 
@@ -24,6 +28,15 @@ func RunScheduler(configPath string) error {
 
 func RunWorker(configPath string) error {
 	return run(configPath, framework.ScopeWorker)
+}
+
+func RunAll(configPath string) error {
+	return run(
+		configPath,
+		framework.ScopeHTTP,
+		framework.ScopeScheduler,
+		framework.ScopeWorker,
+	)
 }
 
 func run(configPath string, scopes ...framework.Scope) error {

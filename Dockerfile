@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN set -eu; for command in server scheduler worker migrate tool; do \
+RUN set -eu; for command in server scheduler worker all migrate tool; do \
       CGO_ENABLED=0 GOOS=linux go build \
         -trimpath -ldflags="-s -w" \
         -o "/app/bin/${command}" "./cmd/${command}"; \

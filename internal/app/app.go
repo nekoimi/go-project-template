@@ -122,7 +122,7 @@ func initialize(configPath string, scopes ...framework.Scope) (*App, func(), err
 		}
 		return sqlDB.PingContext(ctx)
 	})
-	if cfg.TaskQueue.Enabled {
+	if cfg.TaskQueue.Enabled && requiresTaskQueue(scopes...) {
 		queueClient = taskqueue.NewClient(cfg.TaskQueue.Redis)
 		health.Register("redis", queueClient.Ping)
 	}
@@ -177,6 +177,10 @@ func hasScope(scopes []framework.Scope, wanted framework.Scope) bool {
 		}
 	}
 	return false
+}
+
+func requiresTaskQueue(scopes ...framework.Scope) bool {
+	return hasScope(scopes, framework.ScopeScheduler) || hasScope(scopes, framework.ScopeWorker)
 }
 
 func validateRuntime(cfg *config.Config, scopes ...framework.Scope) error {

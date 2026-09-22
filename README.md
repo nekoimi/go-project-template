@@ -27,6 +27,7 @@
 │   ├── server/                 # HTTP 服务入口
 │   ├── scheduler/              # cron 定时投递入口
 │   ├── worker/                 # Asynq 任务消费入口
+│   ├── all/                    # HTTP + scheduler + worker 一体化入口
 │   ├── migrate/                # 数据库迁移命令
 │   └── tool/                   # 运维工具入口
 ├── config/                     # dev/test/prod 配置文件
@@ -115,7 +116,20 @@ make run-scheduler
 make run-worker
 ```
 
-生产运行时职责固定为：HTTP 服务处理请求，scheduler 到点后向 Redis 投递任务，worker 执行任务。HTTP 服务不会启动 cron，因此同时部署三个进程不会重复注册定时任务。
+也可以在一个进程中启动全部运行时：
+
+```bash
+make run-all
+```
+
+项目提供三种部署方式：`server` 仅运行 HTTP；`server`、`scheduler`、`worker`
+可拆分为独立进程；`all` 在一个进程中同时运行三者。拆分部署适合独立扩缩容，
+一体化模式适合本地开发和小规模单实例部署。不要同时启动 `all` 和独立的
+`scheduler`，否则可能重复调度任务；多副本运行 `all` 时也需要额外的 scheduler
+选主或分布式锁。
+
+HTTP-only 模式不会创建任务队列客户端，也不会把 Redis 纳入 `/ready` 检查。
+`scheduler` 到点后向 Redis 投递任务，`worker` 负责消费任务。
 
 Asynq 使用至少一次投递语义，任务处理器必须幂等。Payload 只应包含 ID 和小型参数；文件、长文本和模型上下文应存入 PostgreSQL 或对象存储，任务中只传引用。默认队列为 `critical`、`default` 和 `ai`，可以分别配置优先级与 worker 总并发数。
 
@@ -200,7 +214,7 @@ make docker-up     # 启动完整部署 (app + scheduler + worker + PG + MinIO +
 make docker-down   # 停止
 ```
 
-Docker 容器支持在 `server` 启动前自动执行 `migrate up`，默认关闭；
+Docker 容器支持在 `server` 或 `all` 启动前自动执行 `migrate up`，默认关闭；
 `scheduler`、`worker`、`migrate` 和 `tool` 不会触发自动迁移。使用
 Compose 时可通过环境变量开启：
 
@@ -214,12 +228,13 @@ AUTO_MIGRATE=true docker compose --profile full up -d
 `migrations`）；数据库连接仍可通过 `MIGRATE_DATABASE_URL` 覆盖。多副本部署时，
 建议只为一个启动实例开启自动迁移，或在发布流程中使用独立迁移任务。
 
-同一个镜像包含 `server`、`scheduler`、`worker`、`migrate` 和 `tool` 五个命令，
-默认执行 `server`。例如：
+同一个镜像包含 `server`、`scheduler`、`worker`、`all`、`migrate` 和 `tool`
+六个命令，默认执行 `server`。例如：
 
 ```bash
 docker compose --profile full run --rm app migrate --config config/config.prod.yaml version
 docker run --rm go-project-template:local tool --help
+docker run --rm go-project-template:local all --config config/config.prod.yaml
 docker compose --profile full run --rm worker
 ```
 
